@@ -1,0 +1,16 @@
+services:
+  goreleaser:
+    build:
+      context: .
+      dockerfile: Dockerfile.goreleaser
+    environment:
+      SECRETSHUB_VERSION:
+    volumes:
+      - .:/cyberark-terraform-provider-secretshub
+    working_dir: /cyberark-terraform-provider-secretshub
+  unit_tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/cyberark-terraform-provider-secretshub

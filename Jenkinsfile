@@ -1,6 +1,8 @@
 #!/usr/bin/env groovy
 
-// Automated release, promotion and dependencies
+@Library("product-pipelines-shared-library") _
+
+  // Automated release, promotion and dependencies
 properties([
   // Include the automated release parameters for the build
   release.addParams(),
@@ -10,14 +12,10 @@ properties([
 
 // Performs release promotion.  No other stages will be run
 if (params.MODE == "PROMOTE") {
-  release.promote(params.VERSION_TO_PROMOTE) { infrapool, sourceVersion, targetVersion, assetDirectory ->
-    // Any assets from sourceVersion Github release are available in assetDirectory
-    // Any version number updates from sourceVersion to targetVersion occur here
-    // Any publishing of targetVersion artifacts occur here
-    // Anything added to assetDirectory will be attached to the Github Release
+  release.promote(params.VERSION_TO_PROMOTE) { sourceVersion, targetVersion, assetDirectory ->
 
-    //Note: assetDirectory is on the infrapool agent, not the local Jenkins agent.
   }
+  // Copy Github Enterprise release to Github
   release.copyEnterpriseRelease(params.VERSION_TO_PROMOTE)
   return
 }
@@ -27,7 +25,7 @@ pipeline {
 
   options {
     timestamps()
-    buildDiscarder(logRotator(numToKeepStr: '30'))
+    buildDiscarder(logRotator(daysToKeepStr: '30'))
   }
 
   triggers {
@@ -35,88 +33,93 @@ pipeline {
   }
 
   environment {
-    // Sets the MODE to the specified or autocalculated value as appropriate
     MODE = release.canonicalizeMode()
   }
 
   stages {
-    // Aborts any builds triggered by another project that wouldn't include any changes
-    stage ("Skip build if triggering job didn't create a release") {
-      when {
-        expression {
-          MODE == "SKIP"
-        }
-      }
+    stage('Scan for internal URLs') {
       steps {
         script {
-          currentBuild.result = 'ABORTED'
-          error("Aborting build because this build was triggered from upstream, but no release was built")
+          detectInternalUrls()
         }
       }
     }
 
-    stage('Get InfraPool ExecutorV2 Agent(s)') {
-      steps{
+    stage('Get InfraPool ExecutorV2 Agent') {
+      steps {
         script {
-          // Request ExecutorV2 agents for 1 hour
-          infrapool = getInfraPoolAgent.connected(type: "ExecutorV2", quantity: 1, duration: 1)[0]
+          // Request InfraPool
+          INFRAPOOL_EXECUTORV2_AGENT_0 = getInfraPoolAgent.connected(type: "ExecutorV2", quantity: 1, duration: 1)[0]
+        }
+      }
+    }
+
+    stage('Get latest upstream dependencies') {
+      steps {
+        script {
+          updatePrivateGoDependencies("${WORKSPACE}/go.mod")
+          // Copy the vendor directory onto infrapool
+          INFRAPOOL_EXECUTORV2_AGENT_0.agentPut from: "vendor", to: "${WORKSPACE}"
+          INFRAPOOL_EXECUTORV2_AGENT_0.agentPut from: "go.*", to: "${WORKSPACE}"
         }
       }
     }
 
     // Generates a VERSION file based on the current build number and latest version in CHANGELOG.md
-    stage('Validate Changelog and set version') {
+    stage('Validate changelog and set version') {
       steps {
-        script {
-          updateVersion(infrapool, "CHANGELOG.md", "${BUILD_NUMBER}")
-        }
+        updateVersion(INFRAPOOL_EXECUTORV2_AGENT_0, "CHANGELOG.md", "${BUILD_NUMBER}")
       }
     }
-    stage('Stage running on Atlantis Jenkins Agent Container'){
-        steps {
-            sh 'scripts/in-container.sh'
-        }
-    }
-    stage('Stage on AWS Instance') {
+
+    stage('Build artifacts') {
       steps {
         script {
-          // Run script from repo on an AWS instance managed by infrapool
-          infrapool.agentSh 'scripts/on-instance.sh'
+          INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/build'
         }
       }
     }
 
+    stage('Test') {
+      steps {
+        script {
+          INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/test'
+        }
+      }
+    }
+    
     stage('Release') {
       when {
         expression {
           MODE == "RELEASE"
         }
       }
-
       steps {
         script {
-          release(infrapool, { billOfMaterialsDirectory, assetDirectory ->
-            /* Publish release artifacts to all the appropriate locations
-               Copy any artifacts to assetDirectory on the infrapool node
-               to attach them to the Github release.
-
-               If your assets are on the infrapool node in the target
-               directory, use a copy like this:
-                  infrapool.agentSh "cp target/* ${assetDirectory}"
-               Note That this will fail if there are no assets, add :||
-               if you want the release to succeed with no assets.
-
-               If your assets are in target on the main Jenkins agent, use:
-                 infrapool.agentPut(from: 'target/', to: assetDirectory)
-            */
-          })
+          release(INFRAPOOL_EXECUTORV2_AGENT_0) { billOfMaterialsDirectory, assetDirectory, toolsDirectory ->
+            // Publish release artifacts to all the appropriate locations
+            // Copy any artifacts to assetDirectory to attach them to the Github release
+            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh "cp -r dist/*.zip dist/*_SHA256SUMS ${assetDirectory}"
+            // Create Go module SBOM
+            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh """export PATH="${toolsDirectory}/bin:${PATH}" && go-bom --tools "${toolsDirectory}" --go-mod ./go.mod --image "golang" --output "${billOfMaterialsDirectory}/go-mod-bom.json" """
+          }
         }
-      }
+      }  
     }
   }
+  
+  
   post {
     always {
-      releaseInfraPoolAgent()
+      script {
+        INFRAPOOL_EXECUTORV2_AGENT_0.agentStash name: 'output-xml', includes: 'output/*.xml'
+        unstash 'output-xml'
+        junit 'output/junit.xml'
+        cobertura autoUpdateHealth: true, autoUpdateStability: true, coberturaReportFile: 'output/coverage.xml', conditionalCoverageTargets: '30, 0, 0', failUnhealthy: true, failUnstable: false, lineCoverageTargets: '30, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '30, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+        codacy action: 'reportCoverage', filePath: "output/coverage.xml"
+
+        releaseInfraPoolAgent(".infrapool/release_agents")
+      }
     }
   }
 }
