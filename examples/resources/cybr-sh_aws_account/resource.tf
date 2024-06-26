@@ -3,7 +3,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-resource "secretshubs_awsaccount" "awskey" {
+resource "cybr-sh_awsaccount" "awskey" {
   name               = "user-aws"
   username           = "user-aws"
   platform           = "AWS_TF"

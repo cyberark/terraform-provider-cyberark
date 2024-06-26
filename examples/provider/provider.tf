@@ -3,7 +3,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-provider "secretshub" {
+provider "cybr-sh" {
   tenant        = "aarp0000"
   domain        = "example-domain"
   client_id     = "automation@cyberark.cloud.aarp0000"

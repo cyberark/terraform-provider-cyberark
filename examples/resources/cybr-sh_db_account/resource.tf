@@ -3,7 +3,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-resource "secretshub_db_account" "pgdb" {
+resource "cybr-sh_db_account" "pgdb" {
   name                        = "user-db"
   address                     = "1.2.3.4"
   username                    = "user-db"

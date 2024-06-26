@@ -40,7 +40,7 @@ type secretsHubProviderModel struct {
 
 // Metadata returns the provider type name.
 func (p *secretsHubProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "secretshub"
+	resp.TypeName = "cybr-sh"
 	resp.Version = p.version
 }
 

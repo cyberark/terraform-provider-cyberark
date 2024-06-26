@@ -51,6 +51,7 @@ $ brew install terraform-provider-cybr-sh
 $ mkdir -p ~/.terraform.d/plugins/
 
 $ # If Homebrew is installing somewhere other than `/usr/local/Cellar`, update the path as well.
+
 $ ln -sf /usr/local/Cellar/terraform-provider-cybr-sh/$VERSION/bin/terraform-provider-cybr-sh_* \
     ~/.terraform.d/plugins/
 ```
@@ -77,7 +78,7 @@ $ go build -o ~/.terraform.d/plugins/terraform-provider-cybr-sh main.go
 
 ## Configuration with Environment Variables
 
-In order to use environment variables with SecretsHub Terraform provider use the Terraform variables and [standard mechanism](https://developer.hashicorp.com/terraform/language/values/variables#environment-variables).
+In order to use environment variables with cybr-sh Terraform provider use the Terraform variables and [standard mechanism](https://developer.hashicorp.com/terraform/language/values/variables#environment-variables).
 
 ### Example
 
@@ -87,7 +88,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-provider "secretshub" {
+provider "cybr-sh" {
   tenant        = "aarp0000"
   domain        = "example-domain"
   client_id     = "automation@cyberark.cloud.aarp0000"
@@ -130,7 +131,7 @@ $ terraform plan
 ## Documentation
 
 ### Provider
-[SecretsHub provider](docs/index.md)
+[cybr-sh provider](docs/index.md)
 
 ### Data Sources
 - [Auth token](docs/data-sources/auth_token.md)
