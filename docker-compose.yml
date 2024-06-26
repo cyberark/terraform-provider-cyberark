@@ -6,11 +6,11 @@ services:
     environment:
       SECRETSHUB_VERSION:
     volumes:
-      - .:/cyberark-terraform-provider-secretshub
-    working_dir: /cyberark-terraform-provider-secretshub
+      - .:/terraform-provider-cybr-sh
+    working_dir: /terraform-provider-cybr-sh
   unit_tests:
     build:
       context: .
       dockerfile: Dockerfile.test
     volumes:
-      - .:/cyberark-terraform-provider-secretshub
+      - .:/terraform-provider-cybr-sh

@@ -1,38 +1,33 @@
-# terraform-provider-secretshub
+# terraform-provider-cybr-sh
 
-The Terraform Provider SecretsHub has the ability to interact with CyberArk Privilege Cloud Resources
-and can create safes and accounts.
+The terraform-provider-cybr-sh has the ability to interact with CyberArk Privilege Cloud Resources
+and can create safes, accounts, secretstores and sync policies.
 
 Note: Supported platforms for account creation are AWS, Azure, and MySQL databases.
 
 ## Certification Level
-![](https://img.shields.io/badge/Certification%20Level-Community-28A745?link=https://github.com/cyberark/community/blob/master/Conjur/conventions/certification-levels.md#community)
 
 This repo is a **Community** level project.
-For more detailed information on our certification levels, see [our community guidelines](https://github.com/cyberark/community/blob/main/Conjur/conventions/certification-levels.md#community).
 
 ## Installation
 
 ### Binaries (Recommended)
-The recommended way to install `terraform-provider-secretshub` is to use the binary distributions from this project's
-[GitHub Releases page](https://github.com/cyberark/terraform-provider-secretshub/releases).
+The recommended way to install `terraform-provider-cybr-sh` is to use the binary distributions from this project's.
 The packages are available for Linux, macOS and Windows.
 
-Download and uncompress the latest release for your OS. This example uses the linux binary.
+Generate and uncompress the latest release for your OS. This example uses the linux binary.
 
-_Note: Replace `$VERSION` with the one you want to use. See [releases](https://github.com/cyberark/terraform-provider-secretshub/releases)
-page for available versions._
+_Note: Replace `$VERSION` with the one you want to use.
 
 ```sh
-$ wget https://github.com/cyberark/terraform-provider-secretshub/releases/download/v$VERSION/terraform-provider-secretshub-$VERSION-linux-amd64.tar.gz
-$ tar -xvf terraform-provider-secretshub*.tar.gz
+$ tar -xvf terraform-provider-cybr-sh*.tar.gz
 ```
 
 If you already have an unversioned plugin that was previously downloaded, we first need
 to remove it:
 
 ```sh
-$ rm -f ~/.terraform.d/plugins/terraform-provider-secretshub
+$ rm -f ~/.terraform.d/plugins/terraform-provider-cybr-sh
 ```
 
 Now copy the new binary to the Terraform's plugins folder. If this is your first plugin,
@@ -40,16 +35,10 @@ you will need to create the folder first.
 
 ```sh
 $ mkdir -p ~/.terraform.d/plugins/
-$ mv terraform-provider-secretshub*/terraform-provider-secretshub* ~/.terraform.d/plugins/
+$ mv terraform-provider-cybr-sh*/terraform-provider-cybr-sh* ~/.terraform.d/plugins/
 ```
 
 ### Homebrew (MacOS)
-
-Add and update the [CyberArk Tools Homebrew tap](https://github.com/cyberark/homebrew-tools).
-
-```sh
-$ brew tap cyberark/tools
-```
 
 Install the provider and symlink it to Terraform's plugins directory. Symlinking is
 necessary because [Homebrew is sandboxed and cannot write to your home directory](https://github.com/Homebrew/brew/issues/2986).
@@ -57,12 +46,12 @@ necessary because [Homebrew is sandboxed and cannot write to your home directory
 _Note: Replace `$VERSION` with the appropriate plugin version_
 
 ```sh
-$ brew install terraform-provider-secretshub
+$ brew install terraform-provider-cybr-sh
 
 $ mkdir -p ~/.terraform.d/plugins/
 
 $ # If Homebrew is installing somewhere other than `/usr/local/Cellar`, update the path as well.
-$ ln -sf /usr/local/Cellar/terraform-provider-secretshub/$VERSION/bin/terraform-provider-secretshub_* \
+$ ln -sf /usr/local/Cellar/terraform-provider-cybr-sh/$VERSION/bin/terraform-provider-cybr-sh_* \
     ~/.terraform.d/plugins/
 ```
 
@@ -74,8 +63,8 @@ on your machine (version >=1.21 is required).
 Clone repository and go into the cloned directory
 
 ```sh
-$ git clone https://github.com/cyberark/terraform-provider-secretshub.git
-$ cd terraform-provider-secretshub
+$ git clone https://<github_link>/terraform-provider-cybr-sh.git
+$ cd terraform-provider-cybr-sh
 ```
 
 - Build the provider
@@ -83,7 +72,7 @@ $ cd terraform-provider-secretshub
 ```sh
 $ mkdir -p ~/.terraform.d/plugins/
 $ # Note: If a static binary is required, use ./bin/build to create the executable
-$ go build -o ~/.terraform.d/plugins/terraform-provider-secretshub main.go
+$ go build -o ~/.terraform.d/plugins/terraform-provider-cybr-sh main.go
 ```
 
 ## Configuration with Environment Variables
