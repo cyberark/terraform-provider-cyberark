@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cyberark/terraform-provider-secretshub/internal/cyberark"
+	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
 	"github.com/stretchr/testify/assert"
 )
 

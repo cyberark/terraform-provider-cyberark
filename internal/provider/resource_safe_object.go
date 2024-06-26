@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cybrapi "github.com/cyberark/terraform-provider-secretshub/internal/cyberark"
+	cybrapi "github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"

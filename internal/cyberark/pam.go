@@ -1,4 +1,4 @@
-// Package cyberark provides a client for interacting with the CyberArk's SecretsHub APIs.
+// Package cyberark provides a client for interacting with the SecretsHub APIs.
 package cyberark
 
 import (
@@ -37,14 +37,14 @@ type SafeMember interface {
 	DeleteSafeMember(ctx context.Context)
 }
 
-// PAMAPI is an interface for interacting with the CyberArk's PAM APIs.
+// PAMAPI is an interface for interacting with the PAM APIs.
 type PAMAPI interface {
 	Account
 	Safe
 	SafeMember
 }
 
-// pamAPI is a client for interacting with the CyberArk's SecretsHub APIs.
+// pamAPI is a client for interacting with the SecretsHub APIs.
 type pamAPI struct {
 	client    *Client
 	authToken string

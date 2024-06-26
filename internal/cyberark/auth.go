@@ -1,4 +1,4 @@
-// Package cyberark provides a client for interacting with the CyberArk's SecretsHub APIs.
+// Package cyberark provides a client for interacting with the SecretsHub APIs.
 package cyberark
 
 import (

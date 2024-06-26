@@ -1,4 +1,4 @@
-// Package cyberark provides a client for interacting with the CyberArk's SecretsHub APIs.
+// Package cyberark provides a client for interacting with the SecretsHub APIs.
 package cyberark
 
 import (
@@ -37,14 +37,14 @@ type SyncPolicy interface {
 	DeleteSyncPolicy(ctx context.Context)
 }
 
-// SecretsHubAPI is an interface for interacting with the CyberArk's SecretsHub APIs.
+// SecretsHubAPI is an interface for interacting with the SecretsHub APIs.
 type SecretsHubAPI interface {
 	SecretStore
 	ScanSecretStore
 	SyncPolicy
 }
 
-// secretsHubAPI is a client for interacting with the CyberArk's SecretsHub APIs.
+// secretsHubAPI is a client for interacting with the SecretsHub APIs.
 type secretsHubAPI struct {
 	client    *Client
 	authToken string

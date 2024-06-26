@@ -2,8 +2,9 @@ package provider_test
 
 import (
 	"context"
-	"github.com/cyberark/terraform-provider-secretshub/internal/provider"
 	"testing"
+
+	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
 
 	fwdatasource "github.com/hashicorp/terraform-plugin-framework/datasource"
 )

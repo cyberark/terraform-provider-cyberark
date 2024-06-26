@@ -1,4 +1,4 @@
-// Package cyberark provides a client for interacting with the CyberArk's SecretsHub APIs.
+// Package cyberark provides a client for interacting with the SecretsHub APIs.
 package cyberark
 
 import (
@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Client is a client for interacting with the CyberArk's SecretsHub APIs.
+// Client is a client for interacting with the SecretsHub APIs.
 type Client struct {
 	httpClient  *http.Client
 	baseURL     string

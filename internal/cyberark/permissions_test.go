@@ -2,10 +2,11 @@ package cyberark_test
 
 import (
 	"encoding/json"
-	"github.com/cyberark/terraform-provider-secretshub/internal/cyberark"
+	"testing"
+
+	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestFullAdmin(t *testing.T) {
