@@ -25,7 +25,7 @@ pipeline {
 
   options {
     timestamps()
-    buildDiscarder(logRotator(daysToKeepStr: '30'))
+    buildDiscarder(logRotator(numToKeepStr: '30'))
   }
 
   triggers {
@@ -86,6 +86,13 @@ pipeline {
           INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/test'
         }
       }
+      post {
+        always {
+          script {
+            INFRAPOOL_EXECUTORV2_AGENT_0.agentStash name: 'output-xml', includes: 'output/*.xml'
+          }
+        }
+      }
     }
     
     stage('Release') {
@@ -107,19 +114,14 @@ pipeline {
       }  
     }
   }
-  
-  
   post {
     always {
-      script {
-        INFRAPOOL_EXECUTORV2_AGENT_0.agentStash name: 'output-xml', includes: 'output/*.xml'
-        unstash 'output-xml'
-        junit 'output/junit.xml'
-        cobertura autoUpdateHealth: true, autoUpdateStability: true, coberturaReportFile: 'output/coverage.xml', conditionalCoverageTargets: '30, 0, 0', failUnhealthy: true, failUnstable: false, lineCoverageTargets: '30, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '30, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-        codacy action: 'reportCoverage', filePath: "output/coverage.xml"
+      unstash 'output-xml'
+      junit 'output/junit.xml'
+      cobertura autoUpdateHealth: true, autoUpdateStability: true, coberturaReportFile: 'output/coverage.xml', conditionalCoverageTargets: '30, 0, 0', failUnhealthy: true, failUnstable: false, lineCoverageTargets: '30, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '30, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+      codacy action: 'reportCoverage', filePath: "output/coverage.xml"
 
-        releaseInfraPoolAgent(".infrapool/release_agents")
-      }
+      releaseInfraPoolAgent(".infrapool/release_agents")
     }
   }
 }
