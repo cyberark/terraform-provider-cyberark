@@ -1,0 +1,12 @@
+FROM golang:1.22-alpine
+
+RUN apk add --no-cache bash && \
+    go install github.com/jstemmer/go-junit-report@latest && \
+    go install github.com/axw/gocov/gocov@latest && \
+    go install github.com/AlekSi/gocov-xml@latest
+
+WORKDIR /terraform-provider-cybr-sh
+
+CMD ./bin/test-entrypoint.sh
+
+EXPOSE 8080

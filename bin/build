@@ -1,0 +1,25 @@
+#!/bin/bash -e
+
+export SECRETSHUB_VERSION="$(cat VERSION | cut -d'-' -f1)"
+
+main() {
+  build_and_package_binaries
+}
+
+build_and_package_binaries() {
+  #git fetch --tags  # jenkins does not do this automatically yet
+
+  echo "> Building goreleaser"
+  docker compose build goreleaser
+
+  echo "> Building and packaging binaries"
+  docker compose run --rm \
+    --entrypoint goreleaser \
+    goreleaser release --clean --skip=validate --snapshot
+}
+
+repo_root() {
+  git rev-parse --show-toplevel
+}
+
+main

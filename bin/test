@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+function finish {
+  docker compose down unit_tests -v
+}
+trap finish EXIT
+
+
+main() {
+  docker compose build --pull unit_tests
+  docker compose run --rm unit_tests
+}
+
+main
