@@ -101,4 +101,45 @@ func TestDoRequest(t *testing.T) {
 
 		assert.Error(t, err)
 	})
+
+	t.Run("MissingScheme", func(t *testing.T) {
+		client := cyberark.NewClient("invalid-url/api", false) // Invalid URL
+
+		_, err := client.DoRequest(
+			context.Background(),
+			"POST",
+			"/test",
+			nil,
+			nil,
+		)
+		assert.Error(t, err)
+
+	})
+
+	t.Run("MissingHost", func(t *testing.T) {
+		client := cyberark.NewClient("http://", false) // Invalid URL
+
+		_, err := client.DoRequest(
+			context.Background(),
+			"POST",
+			"/test",
+			nil,
+			nil,
+		)
+		assert.Error(t, err)
+
+	})
+	t.Run("MissingUrl", func(t *testing.T) {
+		client := cyberark.NewClient("", false) // Missing URL
+
+		_, err := client.DoRequest(
+			context.Background(),
+			"POST",
+			"/test",
+			nil,
+			nil,
+		)
+		assert.Error(t, err)
+
+	})
 }

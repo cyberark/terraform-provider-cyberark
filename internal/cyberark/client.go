@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -21,7 +22,12 @@ type Client struct {
 
 // DoRequest sends an HTTP request to the CyberArk API.
 func (c *Client) DoRequest(ctx context.Context, method string, path string, body io.Reader, headers map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest(method, c.baseURL+path, body)
+	relativeURL, err := JoinURL(c.baseURL, path)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(method, relativeURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -86,4 +92,18 @@ func NewClientWithToken(baseURL string, logResponse bool, authToken string) *Cli
 		logResponse: logResponse,
 		AuthToken:   authToken,
 	}
+}
+
+// JoinURL constructs a URL by joining the base URL with the provided path segments.
+func JoinURL(baseURL string, path string) (string, error) {
+	baseURI, err := url.ParseRequestURI(baseURL)
+	if err != nil {
+		return "", err
+	}
+	finalURL, err := url.JoinPath(baseURI.String(), path)
+	if err != nil {
+		return "", err
+	}
+	decodedURL, _ := url.PathUnescape(finalURL)
+	return decodedURL, nil
 }
