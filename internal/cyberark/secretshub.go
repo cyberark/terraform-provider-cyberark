@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -87,6 +86,7 @@ func (a *secretsHubAPI) addSecretStore(ctx context.Context, body interface{}, ou
 		"/api/secret-stores",
 		bytes.NewBuffer(bodyBytes),
 		map[string]string{},
+		map[string]string{},
 	)
 	if err != nil {
 		return err
@@ -139,6 +139,7 @@ func (a *secretsHubAPI) getSecretStore(ctx context.Context, storeID string, outp
 		fmt.Sprintf("/api/secret-stores/%s", storeID),
 		nil,
 		map[string]string{},
+		map[string]string{},
 	)
 	if err != nil {
 		return err
@@ -175,13 +176,16 @@ func (a *secretsHubAPI) GetAzureAkvSecretStores(ctx context.Context) (*SecretSto
 }
 
 func (a *secretsHubAPI) getSecretStores(ctx context.Context, storeType string, output interface{}) error {
-	filter := fmt.Sprintf("type EQ %s", storeType)
+	params := map[string]string{
+		"filter": fmt.Sprintf("type EQ %s", storeType),
+	}
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
-		fmt.Sprintf("/api/secret-stores?filter=%s", url.QueryEscape(filter)),
+		"/api/secret-stores",
 		nil,
 		map[string]string{},
+		params,
 	)
 	if err != nil {
 		return err
@@ -224,6 +228,7 @@ func (a *secretsHubAPI) ScanDefinition(ctx context.Context, details TriggerScanI
 		"/api/scan-definitions/secret-store/default/scan",
 		bytes.NewBuffer(body),
 		headers,
+		map[string]string{},
 	)
 	if err != nil {
 		return TriggerScanOutput{}, err
@@ -256,6 +261,7 @@ func (a *secretsHubAPI) AddSyncPolicy(ctx context.Context, pi PolicyInput) (*Pol
 		"/api/policies",
 		bytes.NewBuffer(body),
 		map[string]string{},
+		map[string]string{},
 	)
 	if err != nil {
 		return nil, err
@@ -281,12 +287,16 @@ func (a *secretsHubAPI) AddSyncPolicy(ctx context.Context, pi PolicyInput) (*Pol
 
 // GetSyncPolicy retrieves a sync policy from the SecretsHub.
 func (a *secretsHubAPI) GetSyncPolicy(ctx context.Context, policyID string) (*PolicyExternalOutput, error) {
+	params := map[string]string{
+		"projection": "REGULAR",
+	}
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
-		fmt.Sprintf("/api/policies/%s?projection=REGULAR", policyID),
+		fmt.Sprintf("/api/policies/%s", policyID),
 		nil,
 		map[string]string{},
+		params,
 	)
 	if err != nil {
 		return nil, err
@@ -307,12 +317,16 @@ func (a *secretsHubAPI) GetSyncPolicy(ctx context.Context, policyID string) (*Po
 
 // GetSyncPolicies retrieves all sync policies from the SecretsHub.
 func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, error) {
+	params := map[string]string{
+		"projection": "REGULAR",
+	}
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
-		"/api/policies?projection=REGULAR",
+		"/api/policies",
 		nil,
 		map[string]string{},
+		params,
 	)
 	if err != nil {
 		return nil, err

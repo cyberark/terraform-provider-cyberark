@@ -28,7 +28,7 @@ func (a *AuthAPI) GetIdentityToken(ctx context.Context, clientID, clientSecret s
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
-	resp, err := a.client.DoRequest(ctx, "POST", "/oauth2/platformtoken", body, headers)
+	resp, err := a.client.DoRequest(ctx, "POST", "/oauth2/platformtoken", body, headers, map[string]string{})
 	if err != nil {
 		return "", err
 	}
