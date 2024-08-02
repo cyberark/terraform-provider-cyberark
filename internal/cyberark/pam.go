@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -63,6 +62,7 @@ func (a *pamAPI) AddAccount(ctx context.Context, credential Credential) (*Creden
 		"/PasswordVault/API/Accounts",
 		bytes.NewBuffer(body),
 		map[string]string{},
+		map[string]string{},
 	)
 	if err != nil {
 		return nil, err
@@ -95,6 +95,7 @@ func (a *pamAPI) GetAccount(ctx context.Context, accountID string) (*CredentialR
 		fmt.Sprintf("/PasswordVault/API/Accounts/%s", accountID),
 		nil,
 		map[string]string{},
+		map[string]string{},
 	)
 	if err != nil {
 		return nil, err
@@ -115,15 +116,15 @@ func (a *pamAPI) GetAccount(ctx context.Context, accountID string) (*CredentialR
 
 // FilterAccounts searches for accounts in the SecretsHub.
 func (a *pamAPI) FilterAccounts(ctx context.Context, search string, filter []string) (*CredentialSearchResponse, error) {
-	query := a.filters(search, filter)
-	tflog.Debug(ctx, fmt.Sprintf("Searching accounts with query: %s", query))
+	params := a.filters(search, filter)
 
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
-		fmt.Sprintf("/PasswordVault/api/accounts%s", query),
+		"/PasswordVault/api/accounts",
 		nil,
 		map[string]string{},
+		params,
 	)
 	if err != nil {
 		return nil, err
@@ -142,18 +143,19 @@ func (a *pamAPI) FilterAccounts(ctx context.Context, search string, filter []str
 	return &searchAccounts, nil
 }
 
-func (a *pamAPI) filters(search string, filter []string) (query string) {
-	q := url.Values{}
+func (a *pamAPI) filters(search string, filter []string) (query map[string]string) {
+	query = make(map[string]string)
+
 	if len(filter) > 0 {
-		q.Add("filter", strings.Join(filter, " AND "))
+		query["filter"] = strings.Join(filter, " AND ")
 	}
 	if len(search) > 0 {
-		q.Add("search", search)
+		query["search"] = search
 	}
-	if len(q) == 0 {
-		return ""
+	if len(query) == 0 {
+		return map[string]string{}
 	}
-	return "?" + q.Encode()
+	return query
 }
 
 // UpdateAccount updates an account in the SecretsHub.
@@ -176,6 +178,7 @@ func (a *pamAPI) AddSafe(ctx context.Context, safe SafeData) (*SafeData, error) 
 		"POST",
 		"/PasswordVault/API/Safes",
 		bytes.NewBuffer(body),
+		map[string]string{},
 		map[string]string{},
 	)
 	if err != nil {
@@ -208,6 +211,7 @@ func (a *pamAPI) GetSafe(ctx context.Context, safeID string) (*SafeData, error) 
 		"GET",
 		fmt.Sprintf("/PasswordVault/API/Safes/%s", safeID),
 		nil,
+		map[string]string{},
 		map[string]string{},
 	)
 	if err != nil {
@@ -265,6 +269,7 @@ func (a *pamAPI) AddSafeMember(ctx context.Context, safe SafeData) error {
 		"POST",
 		fmt.Sprintf("/PasswordVault/API/Safes/%s/Members", *safe.Name),
 		bytes.NewBuffer(block),
+		map[string]string{},
 		map[string]string{},
 	)
 	if err != nil {

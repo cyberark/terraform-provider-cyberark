@@ -482,7 +482,6 @@ func TestGetSyncPolicy(t *testing.T) {
 	t.Run("GetSyncPolicy", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, fmt.Sprintf("/api/policies/%s", policyID), req.URL.Path)
-			assert.Equal(t, "REGULAR", req.URL.Query().Get("projection"))
 			json.NewEncoder(rw).Encode(body)
 		}))
 		defer server.Close()

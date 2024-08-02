@@ -43,6 +43,7 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			strings.NewReader(body),
 			headers,
+			map[string]string{},
 		)
 
 		assert.NoError(t, err)
@@ -66,6 +67,7 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			nil,
 			nil,
+			map[string]string{},
 		)
 
 		assert.NoError(t, err)
@@ -83,6 +85,7 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			nil,
 			nil,
+			map[string]string{},
 		)
 
 		assert.Error(t, err)
@@ -97,6 +100,7 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			nil,
 			nil,
+			map[string]string{},
 		)
 
 		assert.Error(t, err)
@@ -111,6 +115,7 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			nil,
 			nil,
+			map[string]string{},
 		)
 		assert.Error(t, err)
 
@@ -125,6 +130,7 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			nil,
 			nil,
+			map[string]string{},
 		)
 		assert.Error(t, err)
 
@@ -138,6 +144,21 @@ func TestDoRequest(t *testing.T) {
 			"/test",
 			nil,
 			nil,
+			map[string]string{},
+		)
+		assert.Error(t, err)
+
+	})
+	t.Run("MissingUrl", func(t *testing.T) {
+		client := cyberark.NewClient("", false) // Missing URL
+
+		_, err := client.DoRequest(
+			context.Background(),
+			"POST",
+			"/test/a/b",
+			nil,
+			nil,
+			map[string]string{},
 		)
 		assert.Error(t, err)
 

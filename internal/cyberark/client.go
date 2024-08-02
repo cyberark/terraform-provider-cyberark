@@ -21,12 +21,11 @@ type Client struct {
 }
 
 // DoRequest sends an HTTP request to the CyberArk API.
-func (c *Client) DoRequest(ctx context.Context, method string, path string, body io.Reader, headers map[string]string) (*http.Response, error) {
-	relativeURL, err := JoinURL(c.baseURL, path)
+func (c *Client) DoRequest(ctx context.Context, method string, path string, body io.Reader, headers map[string]string, params map[string]string) (*http.Response, error) {
+	relativeURL, err := JoinURL(c.baseURL, path, params)
 	if err != nil {
 		return nil, err
 	}
-
 	req, err := http.NewRequest(method, relativeURL, body)
 	if err != nil {
 		return nil, err
@@ -95,15 +94,26 @@ func NewClientWithToken(baseURL string, logResponse bool, authToken string) *Cli
 }
 
 // JoinURL constructs a URL by joining the base URL with the provided path segments.
-func JoinURL(baseURL string, path string) (string, error) {
+func JoinURL(baseURL string, path string, params map[string]string) (string, error) {
 	baseURI, err := url.ParseRequestURI(baseURL)
 	if err != nil {
 		return "", err
 	}
-	finalURL, err := url.JoinPath(baseURI.String(), path)
+
+	relativePath, err := url.Parse(path)
 	if err != nil {
 		return "", err
 	}
-	decodedURL, _ := url.PathUnescape(finalURL)
-	return decodedURL, nil
+
+	finalURL := baseURI.JoinPath(relativePath.String())
+
+	if len(params) != 0 {
+		queryParams := url.Values{}
+		for key, value := range params {
+			queryParams.Add(key, value)
+		}
+		finalURL.RawQuery = queryParams.Encode()
+	}
+
+	return finalURL.String(), nil
 }
