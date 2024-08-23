@@ -94,6 +94,27 @@ pipeline {
         }
       }
     }
+
+    stage('Run integration tests for P-Cloud and SecretsHub') {
+      steps {
+        withCredentials([
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-tenant_username", variable: 'INFRAPOOL_SHARED_SERVICES_TENANT'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-tenant_address", variable: 'INFRAPOOL_SHARED_SERVICES_DOMAIN'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_password", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_SECRET'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_username", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_ID'),
+
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-nar_username", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_NAME'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-nar_address", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_ALIAS'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-nar_password", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_REGION'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-account_username", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_ACCOUNT_ID'),
+          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-account_password", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE')
+        ]){
+          script {
+            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/integration-test'
+          }
+        }
+      }
+    }
     
     stage('Release') {
       when {

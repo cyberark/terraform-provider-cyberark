@@ -1,0 +1,61 @@
+variable "tenant_name" {}
+variable "client_id" {
+  description = "The username for secretshub service account"
+  type        = string
+  sensitive   = true
+}
+variable "client_secret" {
+  description = "The password for secretshub service account"
+  type        = string
+  sensitive   = true
+}
+variable "domain" {}
+
+variable "secret_key" {
+  type      = string
+  sensitive = true
+}
+variable "azure_username" {}
+variable "safename" {}
+variable "ms_app_id" {}
+variable "ms_app_obj_id" {}
+variable "ms_key_id" {}
+
+
+terraform {
+  required_providers {
+    cybr-sh = {
+      source = "example/cyberark/cybr-sh"
+      version = "~> 0"
+    }
+  }
+}
+
+
+provider "cybr-sh" {
+  tenant       = var.tenant_name
+  domain       = var.domain
+  client_id     = var.client_id
+  client_secret = var.client_secret
+}
+
+resource "cybr-sh_azure_account" "msaccountcreation" {
+  name             = var.azure_username
+  address          = "1.3.3.1"
+  username         = var.azure_username
+  platform         = "MS_Azure"
+  safe             = var.safename
+  secret           = var.secret_key
+  sm_manage        = false
+  sm_manage_reason = "No CPM Associated with Safe."
+  ms_app_id         = var.ms_app_id 
+  ms_app_obj_id     = var.ms_app_obj_id 
+  ms_key_id         = var.ms_key_id
+}
+
+
+output "status" {
+  value = (
+    cybr-sh_azure_account.msaccountcreation.id != "" ? "success" : "fail"
+  )
+}
