@@ -1,5 +1,15 @@
 #!/bin/bash -e
 
+export TF_TENANT_NAME="${INFRAPOOL_SHARED_SERVICES_TENANT}"
+export TF_DOMAIN_NAME="${INFRAPOOL_SHARED_SERVICES_DOMAIN}"
+export TF_CLIENT_ID="${INFRAPOOL_SHARED_SERVICES_CLIENT_ID}"
+export TF_CLIENT_SECRET="${INFRAPOOL_SHARED_SERVICES_CLIENT_SECRET}"
+export TF_AWS_ALIAS="${INFRAPOOL_SHARED_SERVICES_AWS_ALIAS}"
+export TF_AWS_ACCOUNT_REGION="${INFRAPOOL_SHARED_SERVICES_AWS_REGION}"
+export TF_AWS_ACCOUNT_ID="${INFRAPOOL_SHARED_SERVICES_AWS_ACCOUNT_ID}"
+export TF_AWS_IAM_ROLE="${INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE}"
+export TF_SOURCE_ID="store-77644f32-1d09-4845-91cb-574154609632"
+
 function finish {
   docker compose down unit_tests -v
 }
@@ -7,6 +17,7 @@ trap finish EXIT
 
 
 main() {
+
   docker compose build --pull unit_tests
   docker compose run --rm unit_tests
 }
