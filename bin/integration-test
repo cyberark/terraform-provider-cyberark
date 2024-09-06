@@ -92,6 +92,7 @@ function main() {
     if [ -n "$id" ]; then
       disableAndDeletePolicy "$token" "$id"
     fi
+    sleep 10
   done
 
   # Delete the SecretStore
@@ -250,14 +251,14 @@ function disableAndDeletePolicy() {
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{ "action": "disable" }')
-
+  
   if [ "$status" -eq 200 ]; then
     # Delete the policy
     status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
       -X DELETE "https://$TF_VAR_domain.secretshub.cyberark.cloud/api/policies/$policy_id" \
       -H 'Accept: application/json')
 
-    [ "$status" -eq 200 ] && echo "Successfully deleted the sync policy: $policy_id" || echo "Failed to delete the sync policy: $policy_id"
+    [ "$status" -eq 200 ] && echo "Successfully deleted the sync policy: $policy_id" || echo "Failed to delete the sync policy($policy_id): $status"
   else
     echo "Failed to disable the sync policy: $policy_id"
   fi
@@ -277,7 +278,7 @@ function deleteSecretStore() {
   if [ "$status" -eq 204 ]; then
     echo "Successfully deleted the SecretStore: $store_id"
   else
-    echo "Failed to delete the SecretStore: $store_id"
+    echo "Failed to delete the SecretStore($store_id): $status"
   fi
 }
 
