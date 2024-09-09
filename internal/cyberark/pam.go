@@ -46,7 +46,7 @@ type PAMAPI interface {
 // pamAPI is a client for interacting with the SecretsHub APIs.
 type pamAPI struct {
 	client    *Client
-	authToken string
+	authToken []byte
 }
 
 // AddAccount adds a new account to the SecretsHub.
@@ -299,7 +299,7 @@ func (a *pamAPI) DeleteSafeMember(_ context.Context) {
 }
 
 // NewPAMAPI creates a new PAMAPI client.
-func NewPAMAPI(baseURL, authToken string) PAMAPI {
+func NewPAMAPI(baseURL string, authToken []byte) PAMAPI {
 	return &pamAPI{
 		client:    NewClientWithToken(baseURL, true, authToken),
 		authToken: authToken,

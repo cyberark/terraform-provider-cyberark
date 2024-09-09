@@ -15,7 +15,7 @@ import (
 
 func TestDoRequest(t *testing.T) {
 	t.Run("DoRequest", func(t *testing.T) {
-		token := "dummy_token"
+		token := []byte("dummy_token")
 		additionalHeaderKey := "Test-Header"
 		additionalHeaderValue := "Test-Value"
 		body := "test body"

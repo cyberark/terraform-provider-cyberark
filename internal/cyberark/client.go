@@ -16,7 +16,7 @@ import (
 type Client struct {
 	httpClient  *http.Client
 	baseURL     string
-	AuthToken   string
+	AuthToken   []byte
 	logResponse bool
 }
 
@@ -30,10 +30,10 @@ func (c *Client) DoRequest(ctx context.Context, method string, path string, body
 	if err != nil {
 		return nil, err
 	}
-
-	if c.AuthToken != "" {
+	authToken := string(c.AuthToken)
+	if authToken != "" {
 		// Set the Authorization header to include the auth token.
-		req.Header.Set("Authorization", "Bearer "+c.AuthToken)
+		req.Header.Set("Authorization", "Bearer "+authToken)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -66,7 +66,7 @@ func (c *Client) DoRequest(ctx context.Context, method string, path string, body
 		// Replace the response body with a new reader that contains the original data
 		response.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 	}
-
+	authToken = ""
 	return response, nil
 }
 
@@ -82,7 +82,7 @@ func NewClient(baseURL string, logResponse bool) *Client {
 }
 
 // NewClientWithToken creates a new Client instance with the provided base URL and auth token.
-func NewClientWithToken(baseURL string, logResponse bool, authToken string) *Client {
+func NewClientWithToken(baseURL string, logResponse bool, authToken []byte) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,

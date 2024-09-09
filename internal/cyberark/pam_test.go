@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	token               = "dummy_token"
+	token               = []byte("dummy_token")
 	credID              = "123"
 	name                = "user"
 	safe                = "user_safe"

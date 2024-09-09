@@ -190,6 +190,7 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading secret stores",
 			fmt.Sprintf("Error while reading secret stores: %+v", err))
+		appClientSecret = ""
 		return
 	}
 
@@ -210,8 +211,10 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating secret store",
 			fmt.Sprintf("Error while creating secret store: %+v", err))
+		appClientSecret = ""
 		return
 	}
+	appClientSecret = ""
 
 	scanInputBody := cybrapi.TriggerScanInputBody{
 		Scope: cybrapi.ScanScope{

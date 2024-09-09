@@ -15,8 +15,8 @@ import (
 func TestGetIdentityToken(t *testing.T) {
 	t.Run("GetIdentityToken", func(t *testing.T) {
 		clientID := "test_client_id"
-		clientSecret := "test_client_secret"
-		token := "dummy_token"
+		clientSecret := []byte("test_client_secret")
+		token := []byte("dummy_token")
 
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// Read the request body
@@ -50,7 +50,7 @@ func TestGetIdentityToken(t *testing.T) {
 
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", "test_client_secret")
+		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -64,7 +64,7 @@ func TestGetIdentityToken(t *testing.T) {
 
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", "test_client_secret")
+		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -78,7 +78,7 @@ func TestGetIdentityToken(t *testing.T) {
 
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", "test_client_secret")
+		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
