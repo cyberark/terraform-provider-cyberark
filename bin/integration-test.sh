@@ -68,7 +68,7 @@ function main() {
   # Run and validate each test
   for test in "${tests_to_run[@]}"; do
     # Each test defines flag
-    runTerraform "test/$test" || overall_status=1
+    testProviderFeature "test/$test" || overall_status=1
     sleep 5
   done
 
@@ -76,13 +76,13 @@ function main() {
   TF_VAR_target_secretstore_id=$(cat "$AWS_SECRETSTORE_STATEFILE" | \
   jq -r '.resources[] | select(.type == "cybr-sh_aws_secret_store") | .instances[0].attributes.id' \
   )
-  runTerraform "test/syncpolicy" || overall_status=1
+  testProviderFeature "test/syncpolicy" || overall_status=1
   sleep 5
   #stop the container
   dockerCompose down
   #generate_random_values
   generate_random_values
-  runTerraformSingleRun "test/aws_single_run" || overall_status=1
+  singleRunProviderTest "test/aws_single_run" || overall_status=1
 
   token=$(generateToken)
 
@@ -143,7 +143,7 @@ function dockerCompose() {
   docker compose $DOCKER_COMPOSE_ARGS "$@"
 }
 
-function terraformRun() {
+function terraformExecute() {
   dockerCompose exec -T terraform sh -ec "$@"
 }
 
@@ -153,7 +153,7 @@ function validateTerraformOutputs() {
 
   echo "Validating outputs for $target_dir..."
 
-  output=$(terraformRun \
+  output=$(terraformExecute \
     "cd $target_dir/ &&
      terraform output -json")
 
@@ -169,7 +169,7 @@ function validateTerraformOutputs() {
   fi
 }
 
-function runTerraform() {
+function testProviderFeature() {
   target_dir=$1
 
   echo ">> Planning and applying '$target_dir/main.tf' Terraform manifest"
@@ -178,9 +178,10 @@ function runTerraform() {
 
   dockerCompose up -d terraform
 
-  terraformRun \
+  terraformExecute \
     "cd $target_dir/ &&
      terraform init &&
+     terraform validate &&
      terraform plan &&
      terraform apply -auto-approve"
 
@@ -189,7 +190,7 @@ function runTerraform() {
   
 }
 
-function runTerraformSingleRun() {
+function singleRunProviderTest() {
   target_dir=$1
 
   echo ">> Planning and applying '$target_dir/main.tf' Terraform manifest"
@@ -200,9 +201,10 @@ function runTerraformSingleRun() {
   dockerCompose up -d terraform
 
   # Run Terraform commands
-  terraform_output=$(terraformRun \
+  terraform_output=$(terraformExecute \
     "cd $target_dir/ &&
      terraform init &&
+     terraform validate &&
      terraform plan &&
      terraform apply -auto-approve &&
      terraform output -json")

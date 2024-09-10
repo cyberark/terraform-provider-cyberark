@@ -1,20 +1,27 @@
-variable "tenant_name" {}
+variable "tenant_name" {
+  description = "CyberArk Shared Services Tenant"
+  type        = string
+}
 variable "client_id" {
   description = "The username for secretshub service account"
   type        = string
-  sensitive   = true
 }
 variable "client_secret" {
   description = "The password for secretshub service account"
   type        = string
   sensitive   = true
 }
-variable "domain" {}
+variable "domain" {
+  description = "CyberArk Privilege Cloud and Secrets Hub Domain"
+  type        = string
+}
 
 variable "secret_key" {
+  description = "Secret Key of the credential object"
   type      = string
   sensitive = true
 }
+
 variable "aws_username" {}
 variable "safename" {}
 

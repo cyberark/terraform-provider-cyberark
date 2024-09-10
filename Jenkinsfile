@@ -123,7 +123,7 @@ pipeline {
           conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-account_password", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE')
         ]){
           script {
-            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/integration-test'
+            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/integration-test.sh'
           }
         }
       }
