@@ -1,7 +1,6 @@
 #!/bin/bash -x
 
-STORE_ID=""
-POLICY_ID=""
+source "$(dirname "$0")/utils.sh"
 
 function generate_random_values() {
   local random_number=$((RANDOM % 9000 + 1000))
@@ -67,93 +66,13 @@ function main() {
   rm output/junit.output output/acceptance* output/unit* output/combined-c.out
 
   set +x
+
   #Delete Secretstore and Sync policy
-  token=$(generateToken)
-  getStoreID "$token"
-  getPolicyID "$token"
-  [ -n "$POLICY_ID" ] && disableAndDeletePolicy "$token" "$POLICY_ID" || echo "No policies found for deletion"
-  [ -n "$STORE_ID" ] && deleteSecretStore "$token" "$STORE_ID" || echo "No SecretStores found for deletion"
+  token=$(generateToken "$TF_TENANT_NAME" "$TF_CLIENT_ID" "$TF_CLIENT_SECRET")
+  store_id=$(getStoreID "$TF_DOMAIN_NAME" "$token")
+  policy_id=$(fetchPolicyIDFromApi "$TF_DOMAIN_NAME" "$token" "$store_id")
+  [ -n "$policy_id" ] && disableAndDeletePolicy "$TF_DOMAIN_NAME" "$token" "$policy_id" || echo "No policies found for deletion"
+  [ -n "$store_id" ] && deleteSecretStore "$TF_DOMAIN_NAME" "$token" "$store_id" || echo "No SecretStores found for deletion"
 }
-
-# Function to generate OIDC token
-function generateToken() {
-  local token
-  token=$(curl -s --location --request POST "https://$TF_TENANT_NAME.id.cyberark.cloud/oauth2/platformtoken" \
-    --header 'Content-Type: application/x-www-form-urlencoded' \
-    --data-urlencode "grant_type=client_credentials" \
-    --data-urlencode "client_id=$TF_CLIENT_ID" \
-    --data-urlencode "client_secret=$TF_CLIENT_SECRET" | jq -r '.access_token')
-
-  if [ -z "$token" ]; then
-    echo "Failed to obtain access token."
-    exit 1
-  fi
-  echo "$token"
-}
-
-# Function to get store ID
-function getStoreID(){
-   local token=$1
-   STORE_ID=$(curl -s -H "Authorization: Bearer $token" \
-    -X 'GET' \
-    "https://$TF_DOMAIN_NAME.secretshub.cyberark.cloud/api/secret-stores?behavior=SECRETS_TARGET&filter=type%20EQ%20AWS_ASM" \
-    -H 'accept: application/json' | jq -r '.secretStores[] | select(.name == "aws_store") | .id')
-}
-
-# Function to get Policy ID
-function getPolicyID(){
-   local token=$1
-   if [ -n "$STORE_ID" ]; then
-     POLICY_ID=$(curl -s -H "Authorization: Bearer $token" \
-      -X 'GET' \
-      "https://$TF_DOMAIN_NAME.secretshub.cyberark.cloud/api/policies?filter=target.id%20EQ%20$STORE_ID" \
-      -H 'accept: application/json'| jq -r '.policies[].id')
-   fi
-}
-
-
-# Function to disable and delete policy
-function disableAndDeletePolicy() {
-  local token=$1
-  local policy_id=$2
-  local status
-  
-  # Disable the policy
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
-    -X PUT "https://$TF_DOMAIN_NAME.secretshub.cyberark.cloud/api/policies/$policy_id/state" \
-    -H 'Accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d '{ "action": "disable" }')
-
-  if [ "$status" -eq 200 ]; then
-    # Delete the policy
-    status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
-      -X DELETE "https://$TF_DOMAIN_NAME.secretshub.cyberark.cloud/api/policies/$policy_id" \
-      -H 'Accept: application/json')
-
-    [ "$status" -eq 200 ] && echo "Successfully deleted the sync policy: $policy_id" || echo "Failed to delete the sync policy: $policy_id"
-  else
-    echo "Failed to disable the sync policy: $policy_id"
-  fi
-}
-
-# Function to delete secret store
-function deleteSecretStore() {
-  local token=$1
-  local store_id=$2
-  local status
-
-  # Delete the secret store
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
-    -X DELETE "https://$TF_DOMAIN_NAME.secretshub.cyberark.cloud/api/secret-stores/$store_id" \
-    -H 'Accept: */*')
-
-  if [ "$status" -eq 204 ]; then
-    echo "Successfully deleted the SecretStore: $store_id"
-  else
-    echo "Failed to delete the SecretStore: $store_id"
-  fi
-}
-
 
 main

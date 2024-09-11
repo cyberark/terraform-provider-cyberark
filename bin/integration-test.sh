@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eo pipefail
 
+source "$(dirname "$0")/utils.sh"
+
 # Trim the build number from the VERSION file to be compatible with tf version constraints
 export SECRETSHUB_VERSION="$(cat VERSION | cut -d'-' -f1)"
 
@@ -16,7 +18,6 @@ export TF_VAR_aws_account_id="${INFRAPOOL_SHARED_SERVICES_AWS_ACCOUNT_ID}"
 export TF_VAR_aws_iam_role="${INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE}"
 export TF_VAR_source_P_cloud_id="store-77644f32-1d09-4845-91cb-574154609632"
 export TF_VAR_target_secretstore_id=""
-
 
 AWS_SECRETSTORE_STATEFILE="test/awssecretstore/terraform.tfstate"
 
@@ -84,20 +85,20 @@ function main() {
   generate_random_values
   singleRunProviderTest "test/aws_single_run" || overall_status=1
 
-  token=$(generateToken)
+  token=$(generateToken "$TF_VAR_tenant_name" "$TF_VAR_client_id" "$TF_VAR_client_secret")
 
   # Delete the Sync Policies
   for dir in "test/syncpolicy" "test/aws_single_run"; do
     id=$(getPolicyID "$dir")
     if [ -n "$id" ]; then
-      disableAndDeletePolicy "$token" "$id"
+      disableAndDeletePolicy "$TF_VAR_domain" "$token" "$id"
     fi
     sleep 10
   done
 
   # Delete the SecretStore
   if [ -n "$TF_VAR_target_secretstore_id" ]; then
-    deleteSecretStore "$token" "$TF_VAR_target_secretstore_id"
+    deleteSecretStore "$TF_VAR_domain" "$token" "$TF_VAR_target_secretstore_id"
   fi
 
   # Summary of the results
@@ -224,77 +225,5 @@ function singleRunProviderTest() {
     return 1
   fi
 }
-
-# Function to generate OIDC token
-function generateToken() {
-  local token
-  token=$(curl -s --location --request POST "https://$TF_VAR_tenant_name.id.cyberark.cloud/oauth2/platformtoken" \
-    --header 'Content-Type: application/x-www-form-urlencoded' \
-    --data-urlencode "grant_type=client_credentials" \
-    --data-urlencode "client_id=$TF_VAR_client_id" \
-    --data-urlencode "client_secret=$TF_VAR_client_secret" | jq -r '.access_token')
-
-  if [ -z "$token" ]; then
-    echo "Failed to obtain access token."
-    exit 1
-  fi
-  echo "$token"
-}
-
-# Function to disable and delete policy
-function disableAndDeletePolicy() {
-  local token=$1
-  local policy_id=$2
-  local status
-  
-  # Disable the policy
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
-    -X PUT "https://$TF_VAR_domain.secretshub.cyberark.cloud/api/policies/$policy_id/state" \
-    -H 'Accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d '{ "action": "disable" }')
-  
-  if [ "$status" -eq 200 ]; then
-    # Delete the policy
-    status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
-      -X DELETE "https://$TF_VAR_domain.secretshub.cyberark.cloud/api/policies/$policy_id" \
-      -H 'Accept: application/json')
-
-    [ "$status" -eq 200 ] && echo "Successfully deleted the sync policy: $policy_id" || echo "Failed to delete the sync policy($policy_id): $status"
-  else
-    echo "Failed to disable the sync policy: $policy_id"
-  fi
-}
-
-# Function to delete secret store
-function deleteSecretStore() {
-  local token=$1
-  local store_id=$2
-  local status
-
-  # Delete the secret store
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" \
-    -X DELETE "https://$TF_VAR_domain.secretshub.cyberark.cloud/api/secret-stores/$store_id" \
-    -H 'Accept: */*')
-
-  if [ "$status" -eq 204 ]; then
-    echo "Successfully deleted the SecretStore: $store_id"
-  else
-    echo "Failed to delete the SecretStore($store_id): $status"
-  fi
-}
-
-# Function to get policy ID from terraform.tfstate
-function getPolicyID() {
-  local dir=$1
-  local policy_id
-  
-  if [ -d "$dir" ]; then
-    policy_id=$(jq -r '.resources[] | select(.type == "cybr-sh_sync_policy") | .instances[0].attributes.id' \
-      < "$dir/terraform.tfstate")
-    echo "$policy_id"
-  fi
-}
-
 
 main
