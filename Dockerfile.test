@@ -1,12 +1,32 @@
+
+FROM hashicorp/terraform AS terraform
+
 FROM golang:1.22-alpine
 
-RUN apk add --no-cache bash && \
-    go install github.com/jstemmer/go-junit-report@latest && \
+# Copy Terraform binary from the terraform stage
+COPY --from=terraform /bin/terraform /usr/local/bin/terraform
+
+COPY ssl_cert/* /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# Install necessary packages
+RUN apk add --no-cache curl \
+               gcc \
+               git \
+               bash \
+               mercurial \
+               musl-dev \
+               jq \
+               libc-dev \
+               openssl
+
+RUN go install github.com/jstemmer/go-junit-report@latest && \
     go install github.com/axw/gocov/gocov@latest && \
-    go install github.com/AlekSi/gocov-xml@latest
+    go install github.com/AlekSi/gocov-xml@latest && \
+    go install github.com/wadey/gocovmerge@latest
 
 WORKDIR /terraform-provider-cybr-sh
 
-CMD ./bin/test-entrypoint.sh
+CMD ["./bin/test-entrypoint.sh"]
 
 EXPOSE 8080
