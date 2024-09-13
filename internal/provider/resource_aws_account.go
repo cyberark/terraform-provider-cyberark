@@ -187,6 +187,7 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 		})
 	if err != nil {
 		resp.Diagnostics.AddError("Error searching for account", fmt.Sprintf("Error searching for account: %+v", err))
+		secret = ""
 		return
 	}
 
@@ -204,6 +205,7 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 		account, err = r.api.PamAPI.AddAccount(ctx, newAccount)
 		if err != nil {
 			resp.Diagnostics.AddError("Error creating account", fmt.Sprintf("Error creating account: %+v", err))
+			secret = ""
 			return
 		}
 	}
@@ -220,6 +222,8 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	// Clear sensitive data
+	secret = ""
 }
 
 // Refresh Existing State

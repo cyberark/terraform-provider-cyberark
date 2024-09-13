@@ -80,7 +80,7 @@ func (d *tokenDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	data.Token = types.StringValue(d.client.AuthToken)
+	data.Token = types.StringValue(string(d.client.AuthToken))
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

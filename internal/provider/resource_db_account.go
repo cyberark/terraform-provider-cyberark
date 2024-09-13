@@ -196,6 +196,7 @@ func (r *dbAccountResource) Create(ctx context.Context, req resource.CreateReque
 		})
 	if err != nil {
 		resp.Diagnostics.AddError("Error searching for account", fmt.Sprintf("Error searching for account: %+v", err))
+		secret = ""
 		return
 	}
 
@@ -213,6 +214,7 @@ func (r *dbAccountResource) Create(ctx context.Context, req resource.CreateReque
 		account, err = r.api.PamAPI.AddAccount(ctx, newAccount)
 		if err != nil {
 			resp.Diagnostics.AddError("Error creating account", fmt.Sprintf("Error creating account: %+v", err))
+			secret = ""
 			return
 		}
 	}
@@ -229,6 +231,8 @@ func (r *dbAccountResource) Create(ctx context.Context, req resource.CreateReque
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	// Clear sensitive data
+	secret = ""
 }
 
 // Read the resource and sets the Terraform state.

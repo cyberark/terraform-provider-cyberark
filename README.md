@@ -2,6 +2,9 @@
 
 This topic describes how to integrate Terraform with Secrets Hub using the Terraform Provider Secrets Hub.
 
+## Certification level
+![](https://img.shields.io/badge/Certification%20Level-Certified-28A745?link=https://github.com/cyberark/community/blob/master/Conjur/conventions/certification-levels.md)
+
 ## Overview
 
 The Terraform Provider Secrets Hub is open source and available on GitHub.

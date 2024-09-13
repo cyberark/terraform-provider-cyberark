@@ -30,7 +30,7 @@ func TestAddAwsAsmSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAwsAsmSecretStore(context.Background(), input)
 
@@ -44,7 +44,7 @@ func TestAddAwsAsmSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAwsAsmSecretStore(context.Background(), input)
 
@@ -58,7 +58,7 @@ func TestAddAwsAsmSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAwsAsmSecretStore(context.Background(), input)
 
@@ -72,7 +72,7 @@ func TestAddAwsAsmSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAwsAsmSecretStore(context.Background(), input)
 
@@ -99,7 +99,7 @@ func TestAddAzureAkvSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAzureAkvSecretStore(context.Background(), input)
 
@@ -113,7 +113,7 @@ func TestAddAzureAkvSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAzureAkvSecretStore(context.Background(), input)
 
@@ -127,7 +127,7 @@ func TestAddAzureAkvSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAzureAkvSecretStore(context.Background(), input)
 
@@ -141,7 +141,7 @@ func TestAddAzureAkvSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddAzureAkvSecretStore(context.Background(), input)
 
@@ -152,7 +152,7 @@ func TestAddAzureAkvSecretStore(t *testing.T) {
 
 func TestGetAwsAsmSecretStore(t *testing.T) {
 	var (
-		token = "dummy_token"
+		token = []byte("dummy_token")
 		body  = cyberark.SecretStoreOutput[cyberark.AwsAsmData]{
 			ID:   "test_store_id",
 			Data: &cyberark.AwsAsmData{},
@@ -202,7 +202,7 @@ func TestGetAwsAsmSecretStore(t *testing.T) {
 
 func TestGetAzureAkvSecretStore(t *testing.T) {
 	var (
-		token = "dummy_token"
+		token = []byte("dummy_token")
 		body  = cyberark.SecretStoreOutput[cyberark.CreateAzureAkvData]{
 			ID:   "test_store_id",
 			Data: &cyberark.CreateAzureAkvData{},
@@ -268,7 +268,7 @@ func TestGetAwsAsmSecretStores(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetAwsAsmSecretStores(context.Background())
 
@@ -282,7 +282,7 @@ func TestGetAwsAsmSecretStores(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetAwsAsmSecretStores(context.Background())
 
@@ -309,7 +309,7 @@ func TestGetAzureAkvSecretStores(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetAzureAkvSecretStores(context.Background())
 
@@ -323,7 +323,7 @@ func TestGetAzureAkvSecretStores(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetAzureAkvSecretStores(context.Background())
 
@@ -338,7 +338,7 @@ func TestUpdateSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		client.UpdateSecretStore(context.Background())
 	})
@@ -350,7 +350,7 @@ func TestDeleteSecretStore(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		client.DeleteSecretStore(context.Background())
 	})
@@ -375,7 +375,7 @@ func TestScanDefinition(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.ScanDefinition(context.Background(), input)
 
@@ -389,7 +389,7 @@ func TestScanDefinition(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.ScanDefinition(context.Background(), input)
 		assert.Empty(t, resp)
@@ -418,7 +418,7 @@ func TestAddSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddSyncPolicy(context.Background(), input)
 
@@ -433,7 +433,7 @@ func TestAddSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddSyncPolicy(context.Background(), input)
 
@@ -447,7 +447,7 @@ func TestAddSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddSyncPolicy(context.Background(), input)
 
@@ -461,7 +461,7 @@ func TestAddSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.AddSyncPolicy(context.Background(), input)
 
@@ -486,7 +486,7 @@ func TestGetSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetSyncPolicy(context.Background(), policyID)
 
@@ -500,7 +500,7 @@ func TestGetSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetSyncPolicy(context.Background(), policyID)
 		assert.Empty(t, resp)
@@ -519,7 +519,7 @@ func TestGetSyncPolicies(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetSyncPolicies(context.Background())
 
@@ -533,7 +533,7 @@ func TestGetSyncPolicies(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetSyncPolicies(context.Background())
 		assert.Empty(t, resp)
@@ -547,7 +547,7 @@ func TestUpdateSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		client.UpdateSyncPolicy(context.Background())
 	})
@@ -559,7 +559,7 @@ func TestDeleteSyncPolicy(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, "dummy_token")
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		client.DeleteSyncPolicy(context.Background())
 	})

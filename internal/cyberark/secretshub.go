@@ -46,7 +46,7 @@ type SecretsHubAPI interface {
 // secretsHubAPI is a client for interacting with the SecretsHub APIs.
 type secretsHubAPI struct {
 	client    *Client
-	authToken string
+	authToken []byte
 }
 
 // AddAwsAsmSecretStore adds a new AWS ASM secret store to the SecretsHub.
@@ -354,7 +354,7 @@ func (a *secretsHubAPI) DeleteSyncPolicy(_ context.Context) {
 }
 
 // NewSecretsHubAPI creates a new SecretsHubAPI client.
-func NewSecretsHubAPI(baseURL, authToken string) SecretsHubAPI {
+func NewSecretsHubAPI(baseURL string, authToken []byte) SecretsHubAPI {
 	return &secretsHubAPI{
 		client:    NewClientWithToken(baseURL, true, authToken),
 		authToken: authToken,
