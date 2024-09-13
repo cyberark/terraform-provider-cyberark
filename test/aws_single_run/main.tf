@@ -25,7 +25,7 @@ variable "secret_key" {
 variable "safename" {}
 variable "aws_username" {}
 variable "policy_name" {}
-variable "source_P_cloud_id" {}
+variable "source_p_cloud_id" {}
 variable "target_secretstore_id" {}
 variable "aws_alias" {}
 variable "aws_region" {}
@@ -91,7 +91,7 @@ resource "time_sleep" "wait_few_seconds" {
 resource "cybr-sh_sync_policy" "syncpolicycreate" {
   name              = var.policy_name
   description       = "Policy description"
-  source_id         = var.source_P_cloud_id
+  source_id         = var.source_p_cloud_id
   target_id         = var.target_secretstore_id
   safe_name         = var.safename
   depends_on = [time_sleep.wait_few_seconds]

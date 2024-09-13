@@ -16,7 +16,7 @@ variable "domain" {
   type        = string
 }
 variable "policy_name" {}
-variable "source_P_cloud_id" {}
+variable "source_p_cloud_id" {}
 variable "target_secretstore_id" {}
 variable "safename" {}
 
@@ -41,7 +41,7 @@ provider "cybr-sh" {
 resource "cybr-sh_sync_policy" "syncpolicycreate" {
   name              = var.policy_name
   description       = "Policy description"
-  source_id         = var.source_P_cloud_id
+  source_id         = var.source_p_cloud_id
   target_id         = var.target_secretstore_id
   safe_name         = var.safename
 }
