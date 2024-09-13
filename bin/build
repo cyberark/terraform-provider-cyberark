@@ -16,6 +16,11 @@ build_and_package_binaries() {
   docker compose run --rm \
     --entrypoint goreleaser \
     goreleaser release --clean --skip=validate --snapshot
+  
+  # Needed for testing stages
+  goos='linux'  # uname -s | tr '[:upper:]' '[:lower:]'
+  goarch="amd64"
+  cp dist/terraform-provider-cybr-sh_${goos}_${goarch}_v1/terraform-provider-cybr-sh_v* .
 }
 
 repo_root() {

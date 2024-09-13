@@ -12,5 +12,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
+    environment:
+      SECRETSHUB_VERSION:
+      TF_TENANT_NAME:
+      TF_DOMAIN_NAME:
+      TF_CLIENT_ID:
+      TF_CLIENT_SECRET:
+      TF_AWS_ALIAS:
+      TF_AWS_ACCOUNT_REGION:
+      TF_AWS_ACCOUNT_ID:
+      TF_AWS_IAM_ROLE:
+      TF_SOURCE_ID:
     volumes:
       - .:/terraform-provider-cybr-sh
