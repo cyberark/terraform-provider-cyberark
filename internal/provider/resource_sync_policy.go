@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cybrapi "github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
+	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -87,7 +87,7 @@ For more information click [here](https://docs.cyberark.com/secrets-hub-privileg
 				Required:    true,
 			},
 			"transformation": schema.StringAttribute{
-				Description: "To sync only the password as plain text to password-only-plain-text",
+				Description: "To sync only the password as plain text to password_only_plain_text",
 				Optional:    true,
 			},
 			"description": schema.StringAttribute{

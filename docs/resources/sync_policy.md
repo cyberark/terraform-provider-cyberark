@@ -42,7 +42,7 @@ resource "cybr-sh_sync_policy" "syncpolicy" {
 ### Optional
 
 - `description` (String) Description for policy.
-- `transformation` (String) To sync only the password as plain text to password-only-plain-text
+- `transformation` (String) To sync only the password as plain text to password_only_plain_text
 
 ### Read-Only
 

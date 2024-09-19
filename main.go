@@ -5,7 +5,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )

@@ -106,7 +106,7 @@ Note: The following example uses a Linux binary.
 1. Download the Terraform Provider Secrets Hub (darwin_amd64 or linux_amd64):
 
 ```sh
-$  wget https://github.com/cyberark/terraform-provider-cybr-sh/releases/download/v$VERSION/terraform-provider-cybr-sh_$VERSION.linux_amd64.zip
+$  wget https://github.com/cyberark/terraform-provider-cyberark/releases/download/v$VERSION/terraform-provider-cybr-sh_$VERSION.linux_amd64.zip
 ```
 2. Create a new subdirectory:
 
@@ -173,7 +173,7 @@ macOS/Linux
 1. Clone the repository and open the cloned directory:
 
 ```sh
-$ git clone https://github.com/cyberark/terraform-provider-cybr-sh.git
+$ git clone https://github.com/cyberark/terraform-provider-cyberark.git
 $ cd terraform-provider-cybr-sh
 ```
 

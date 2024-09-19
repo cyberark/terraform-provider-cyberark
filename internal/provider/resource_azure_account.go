@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	cybrapi "github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
+	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 

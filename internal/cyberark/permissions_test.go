@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
+	"github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -44,8 +44,8 @@ checksum:
 
 brews:
   - description: Terraform provider for Secretshub
-    homepage: https://github.com/aharriscybr/terraform-provider-cybr-sh
-    url_template: https://github.com/aharriscybr/terraform-provider-cybr-sh/releases/download/v{{.Env.SECRETSHUB_VERSION}}/{{.ProjectName}}_{{.Env.SECRETSHUB_VERSION}}_{{.Os}}_{{.Arch}}.zip
+    homepage: https://github.com/cyberark/terraform-provider-cyberark
+    url_template: https://github.com/cyberark/terraform-provider-cyberark/releases/download/v{{.Env.SECRETSHUB_VERSION}}/{{.ProjectName}}_{{.Env.SECRETSHUB_VERSION}}_{{.Os}}_{{.Arch}}.zip
     caveats: |
       After installation, you must symlink the provider into Terraform's plugins directory.
       Symlinking is necessary because Homebrew is sandboxed and cannot write to your home directory.

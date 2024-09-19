@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
 
 	fwdatasource "github.com/hashicorp/terraform-plugin-framework/datasource"
 )

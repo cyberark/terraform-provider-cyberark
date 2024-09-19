@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"

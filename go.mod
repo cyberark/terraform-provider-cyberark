@@ -1,4 +1,4 @@
-module github.com/aharriscybr/terraform-provider-cybr-sh
+module github.com/cyberark/terraform-provider-cyberark
 
 go 1.21.5
 

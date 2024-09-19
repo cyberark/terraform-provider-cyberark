@@ -3,7 +3,7 @@ package provider
 import (
 	"testing"
 
-	cybrapi "github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
+	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
