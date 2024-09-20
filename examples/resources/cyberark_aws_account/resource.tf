@@ -3,7 +3,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-resource "cybr-sh_aws_account" "awskey" {
+resource "cyberark_aws_account" "awskey" {
   name               = "user-aws"
   username           = "user-aws"
   platform           = "AWS_TF"

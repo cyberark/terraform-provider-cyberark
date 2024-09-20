@@ -25,22 +25,22 @@ variable "aws_iam_role" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
   }
 }
 
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id     = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_aws_secret_store" "awssecretstorecreation" {
+resource "cyberark_aws_secret_store" "awssecretstorecreation" {
   name              = var.aws_store_name
   description       = "This aws store for created for testing purpose"
   aws_account_alias  = var.aws_alias
@@ -51,6 +51,6 @@ resource "cybr-sh_aws_secret_store" "awssecretstorecreation" {
 
 output "status" {
   value = (
-    cybr-sh_aws_secret_store.awssecretstorecreation.id != "" ? "success" : "fail"
+    cyberark_aws_secret_store.awssecretstorecreation.id != "" ? "success" : "fail"
   )
 }

@@ -1,4 +1,4 @@
-resource "cybr-sh_sync_policy" "syncpolicy" {
+resource "cyberark_sync_policy" "syncpolicy" {
   name           = "azure_policy"
   description    = "Policy description"
   source_id      = "Source ID"

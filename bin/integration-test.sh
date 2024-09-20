@@ -75,7 +75,7 @@ function main() {
 
   test -f "$AWS_SECRETSTORE_STATEFILE" && \
   TF_VAR_target_secretstore_id=$(cat "$AWS_SECRETSTORE_STATEFILE" | \
-  jq -r '.resources[] | select(.type == "cybr-sh_aws_secret_store") | .instances[0].attributes.id' \
+  jq -r '.resources[] | select(.type == "cyberark_aws_secret_store") | .instances[0].attributes.id' \
   )
   testProviderFeature "test/syncpolicy" || overall_status=1
   sleep 5

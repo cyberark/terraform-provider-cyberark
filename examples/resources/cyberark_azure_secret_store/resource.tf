@@ -3,7 +3,7 @@ variable "azure_app_secret" {
   sensitive = true
 }
 
-resource "cybr-sh_azure_secret_store" "storecreation" {
+resource "cyberark_azure_secret_store" "storecreation" {
   name                          = "azure_secret_store"
   description                   = "AKV Secrets Manager for dev-team"
   azure_app_client_directory_id = "Azure App Client Directory ID"

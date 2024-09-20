@@ -20,22 +20,22 @@ variable "safename" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
   }
 }
 
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id     = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_safe" "safetesting" {
+resource "cyberark_safe" "safetesting" {
   safe_name          = var.safename
   safe_desc          = "This is for safe testing"
   member             = "secretshub"
@@ -47,6 +47,6 @@ resource "cybr-sh_safe" "safetesting" {
 
 output "status" {
   value = (
-    cybr-sh_safe.safetesting.id != "" ? "success" : "fail"
+    cyberark_safe.safetesting.id != "" ? "success" : "fail"
   )
 }

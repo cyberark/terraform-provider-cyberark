@@ -1,19 +1,19 @@
-## Terraform Provider Secrets Hub
+## Terraform Provider Cyberark
 
-This topic describes how to integrate Terraform with Secrets Hub using the Terraform Provider Secrets Hub.
+This topic describes how to integrate Terraform with Secrets Hub using the Terraform Provider Cyberark.
 
 ## Certification level
 ![](https://img.shields.io/badge/Certification%20Level-Certified-28A745?link=https://github.com/cyberark/community/blob/master/Conjur/conventions/certification-levels.md)
 
 ## Overview
 
-The Terraform Provider Secrets Hub is open source and available on GitHub.
+The Terraform Provider Cyberark is open source and available on GitHub.
 
-The Terraform Provider Secrets Hub has the ability to interact with CyberArk Cloud Resources(Privilege Cloud and Secrethubs) and can create safes, accounts, secretstores and sync policies.
+The Terraform Provider Cyberark has the ability to interact with CyberArk Cloud Resources(Privilege Cloud and Secrethubs) and can create safes, accounts, secretstores and sync policies.
 
 Note: Supported platforms for account creation are AWS, Azure, and MySQL databases.
 
-The Terraform Provider Secrets Hub includes the following features and benefits:
+The Terraform Provider Cyberark includes the following features and benefits:
 
 Configuration in the Terraform manifest
 
@@ -25,7 +25,7 @@ A Terraform-sensitive flag which may be used against any secrets to keep the val
 
 ## Authentication 
 
-The Terraform Provider Secrets Hub authenticates to CyberArk Identity Security Platform Shared Services with the service account and its credential.
+The Terraform Provider Cyberark authenticates to CyberArk Identity Security Platform Shared Services with the service account and its credential.
 
 ### Set up Service Account
 
@@ -66,7 +66,7 @@ Assign the Privilege Cloud Safe Managers Role and the Secrets Manager - Secrets 
 
 ## Requirements
 
-Terraform Provider Secrets Hub requirements
+Terraform Provider Cyberark requirements
 
 ### Technology
 
@@ -83,9 +83,9 @@ Terraform Provider Secrets Hub requirements
 - Linux
 - Windows
 
-## Install the Terraform Provider Secrets Hub plugin
+## Install the Terraform Provider Cyberark plugin
 
-You can use any of the following methods to install the Terraform Provider Secrets Hub plugin:
+You can use any of the following methods to install the Terraform Provider Cyberark plugin:
 
 Install using binaries (Recommended)
 
@@ -97,35 +97,35 @@ Install using Homebrew (macOS only)
 
 ### Binaries (Recommended)
 
-We recommend installing the Terraform Provider Secrets Hub plugin (terraform-provider-cybr-sh) using the appropriate binary distribution for your environment.
+We recommend installing the Terraform Provider Cyberark plugin (terraform-provider-cyberark) using the appropriate binary distribution for your environment.
 
 In the following examples, replace `$VERSION` with the latest release for your operating system from the GitHub Releases page.
 
 Note: The following example uses a Linux binary.
 
-1. Download the Terraform Provider Secrets Hub (darwin_amd64 or linux_amd64):
+1. Download the Terraform Provider Cyberark (darwin_amd64 or linux_amd64):
 
 ```sh
-$  wget https://github.com/cyberark/terraform-provider-cyberark/releases/download/v$VERSION/terraform-provider-cybr-sh_$VERSION.linux_amd64.zip
+$  wget https://github.com/cyberark/terraform-provider-cyberark/releases/download/v$VERSION/terraform-provider-cyberark_$VERSION.linux_amd64.zip
 ```
 2. Create a new subdirectory:
 
 ```sh
-$ mkdir -p ~/.terraform.d/plugins/terraform.example.com/cyberark/cybr-sh/$VERSION/linux_amd64
+$ mkdir -p ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/linux_amd64
 ```
 3. Decompress the binary into the appropriate plugins directory:
 
 ```sh
-$ unzip terraform-provider-cybr-sh_$VERSION_linux_amd64.zip ~/.terraform.d/plugins/terraform.example.com/cyberark/cybr-sh/$VERSION/linux_amd64
+$ unzip terraform-provider-cyberark_$VERSION_linux_amd64.zip ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/linux_amd64
 ```
 4. To uninstall or remove the previous version of the plugin, run the following command:
 
 ```sh
-$ rm -rf ~/.terraform.d/plugins/terraform.example.com/cyberark/cybr-sh/$VERSION/linux_amd64
+$ rm -rf ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/linux_amd64
 ```
 
 ### Homebrew (MacOS)
-To install the Terraform Provider Secrets Hub using Homebrew:
+To install the Terraform Provider Cyberark using Homebrew:
 
 1. Add and update the CyberArk Tools Homebrew tap:
 
@@ -133,25 +133,25 @@ To install the Terraform Provider Secrets Hub using Homebrew:
 $ brew tap cyberark/tools
 ```
 
-2. Install the Terraform Provider Secrets Hub and symlink it to Terraform's plugins directory. Symlinking is necessary because Homebrew is sandboxed and cannot write to your home directory.
+2. Install the Terraform Provider Cyberark and symlink it to Terraform's plugins directory. Symlinking is necessary because Homebrew is sandboxed and cannot write to your home directory.
 
    Run the following, where $VERSION is the appropriate plugin version:
 _Note: Replace `$VERSION` with the appropriate plugin version_
 
 ```sh
-$ brew install terraform-provider-cybr-sh
+$ brew install terraform-provider-cyberark
 
 $ mkdir -p ~/.terraform.d/plugins/
 
 $ # If Homebrew is installing somewhere other than `/usr/local/Cellar`, update the path as well.
 
-$ ln -sf /usr/local/Cellar/terraform-provider-cybr-sh/$VERSION/bin/terraform-provider-cybr-sh_* \
+$ ln -sf /usr/local/Cellar/terraform-provider-cyberark/$VERSION/bin/terraform-provider-cyberark_* \
     ~/.terraform.d/plugins/
 ```
 3. If you have a previously downloaded unversioned plugin, remove it:
 ```sh
-$ brew uninstall terraform-provider-cybr-sh
-$ rm -f ~/.terraform.d/plugins/terraform-provider-cybr-sh
+$ brew uninstall terraform-provider-cyberark
+$ rm -f ~/.terraform.d/plugins/terraform-provider-cyberark
 ```
 4. Create the Terraform plugins folder if it does not already exist:
 ```sh
@@ -159,14 +159,14 @@ $ mkdir -p ~/.terraform.d/plugins/
 ```
 5. Copy the new binary to the Terraform plugins folder:
 ```sh
-$ mv terraform-provider-cybr-sh*/terraform-provider-cybr-sh* ~/.terraform.d/plugins/
+$ mv terraform-provider-cyberark*/terraform-provider-cyberark* ~/.terraform.d/plugins/
 ```
 
 ### Compile from Source
 
-Before you compile the Terraform Provider Secrets Hub from the source code, make sure you have Go version 1.21 installed on your machine.
+Before you compile the Terraform Provider Cyberark from the source code, make sure you have Go version 1.21 installed on your machine.
 
-To compile the Terraform Provider Secrets Hub:
+To compile the Terraform Provider Cyberark:
 
 macOS/Linux
 
@@ -174,27 +174,27 @@ macOS/Linux
 
 ```sh
 $ git clone https://github.com/cyberark/terraform-provider-cyberark.git
-$ cd terraform-provider-cybr-sh
+$ cd terraform-provider-cyberark
 ```
 
-2. Build the Terraform Provider Secrets Hub
+2. Build the Terraform Provider Cyberark
 
 ```sh
-$ mkdir -p ~/.terraform.d/plugins/terraform.example.com/cyberark/cybr-sh/$VERSION/$platform_reference_in_go
+$ mkdir -p ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/$platform_reference_in_go
 # Example: platform_reference_in_go= darwin_amd64/linux_amd64
 # Note: If a static binary is required, use ./bin/build to create the executable
-$ go build -o ~/.terraform.d/plugins/terraform.example.com/cyberark/cybr-sh/$VERSION/$platform_reference_in_go/terraform-provider-cybr-sh main.go
+$ go build -o ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/$platform_reference_in_go/terraform-provider-cyberark main.go
 ```
 
 
 
 ### Terraform registry
 
-To access the Terraform Provider Secrets Hub from the Terraform registry:
+To access the Terraform Provider Cyberark from the Terraform registry:
 
 In the main.tf configuration file:
 
-- In the source, use registry.terraform.io/cyberark/cybr-sh
+- In the source, use registry.terraform.io/cyberark/cyberark
 
 - In version, provide the latest version
 
@@ -206,19 +206,19 @@ variable "secret_key" {
 
 terraform {
     required_providers {
-      cybr-sh = {
-        source  = “registry.terraform.io/cyberark/cybr-sh"version = "~> 0"
+      cyberark = {
+        source  = “registry.terraform.io/cyberark/cyberark"version = "~> 0"
       }
     }
   }
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant        = "aarp0000"
   domain        = "example-domain"
   client_id     = "automation@cyberark.cloud.aarp0000"
   client_secret = var.secret_key
 }
-resource "cybr-sh_safe" "AAM_Test_Safe" {
+resource "cyberark_safe" "AAM_Test_Safe" {
   safe_name          = "GEN_BY_TF_abc"
   safe_desc          = "Description for GEN_BY_TF_abc"
   member             = "demo@cyberark.cloud.aarp0000"
@@ -243,13 +243,13 @@ Important: The Terraform state file and .tfvars files contain sensitive informat
 
 Following these practices helps safeguard your sensitive data.
 
-## Configure Terraform Provider Secrets Hub
+## Configure Terraform Provider Cyberark
 
-This section describes how to configure the Terraform Provider Secrets Hub.
+This section describes how to configure the Terraform Provider Cyberark.
 
 ### Workflow
 
-Terraform can be executed manually by the user. The Terraform Provider Secrets Hub reads the provider configuration and authenticates to the tenant using the service account and its credentials.
+Terraform can be executed manually by the user. The Terraform Provider Cyberark reads the provider configuration and authenticates to the tenant using the service account and its credentials.
 
 Once authenticated, it configures the resources according to the main.tf file. After setup, the resources can be viewed in Privilege Cloud and Secrets Hub.
 
@@ -266,7 +266,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant        = "aarp0000"
   domain        = "example-domain"
   client_id     = "automation@cyberark.cloud.aarp0000"
@@ -293,7 +293,7 @@ $ terraform plan
 ## Documentation
 
 ### Provider
-[cybr-sh provider](docs/index.md)
+[cyberark provider](docs/index.md)
 
 ### Data Sources
 - [Auth token](docs/data-sources/auth_token.md)
@@ -313,7 +313,7 @@ $ terraform plan
 See [here](examples/) for examples.
 
 ## Limitations
-The Terraform Provider Secrets Hub plugin does not support the following features:
+The Terraform Provider Cyberark plugin does not support the following features:
 - Update safe
 - Delete safe
 - Update account

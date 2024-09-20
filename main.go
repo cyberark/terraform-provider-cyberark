@@ -1,4 +1,4 @@
-// Package main provides the entrypoint for the cybr-sh Terraform provider.
+// Package main provides the entrypoint for the cyberark Terraform provider.
 package main
 
 import (
@@ -11,7 +11,7 @@ import (
 )
 
 //go:generate terraform fmt -recursive ./examples/
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name cybr-sh
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name cyberark
 
 var (
 	version = "dev"
@@ -19,7 +19,7 @@ var (
 
 func main() {
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/cyberark/cybr-sh",
+		Address: "registry.terraform.io/cyberark/cyberark",
 		Debug:   false,
 	}
 

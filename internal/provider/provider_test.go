@@ -19,7 +19,7 @@ var (
 
 var (
 	testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-		"cybr-sh": providerserver.NewProtocol6WithError(provider.New("test")()),
+		"cyberark": providerserver.NewProtocol6WithError(provider.New("test")()),
 	}
 )
 
@@ -47,7 +47,7 @@ func TestProviderResourceSchema(t *testing.T) {
 
 func testProviderConfigData() string {
 	return fmt.Sprintf(`
-        provider "cybr-sh" {
+        provider "cyberark" {
             tenant        = %[1]q
             domain        = %[2]q
             client_id     = %[3]q

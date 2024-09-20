@@ -34,8 +34,8 @@ variable "aws_key_id" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
     time = {
@@ -45,14 +45,14 @@ terraform {
   }
 }
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id    = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_safe" "safetesting" {
+resource "cyberark_safe" "safetesting" {
   safe_name          = var.safename
   safe_desc          = "This is for safe testing"
   member             = "secretshub"
@@ -63,11 +63,11 @@ resource "cybr-sh_safe" "safetesting" {
 }
 
 resource "time_sleep" "wait_5_seconds" {
-  depends_on = [cybr-sh_safe.safetesting]
+  depends_on = [cyberark_safe.safetesting]
   create_duration = "5s"
 }
 
-resource "cybr-sh_aws_account" "awsaccountcreation" {
+resource "cyberark_aws_account" "awsaccountcreation" {
   name              = var.aws_username
   username          = var.aws_username
   platform          = "AWSAccessKeys"
@@ -84,11 +84,11 @@ resource "cybr-sh_aws_account" "awsaccountcreation" {
 
 
 resource "time_sleep" "wait_few_seconds" {
-  depends_on = [cybr-sh_aws_account.awsaccountcreation]
+  depends_on = [cyberark_aws_account.awsaccountcreation]
   create_duration = "5s"
 }
 
-resource "cybr-sh_sync_policy" "syncpolicycreate" {
+resource "cyberark_sync_policy" "syncpolicycreate" {
   name              = var.policy_name
   description       = "Policy description"
   source_id         = var.source_p_cloud_id
@@ -100,9 +100,9 @@ resource "cybr-sh_sync_policy" "syncpolicycreate" {
 output "overall_status" {
   value = (
     (
-      cybr-sh_safe.safetesting.id != "" &&
-      cybr-sh_aws_account.awsaccountcreation.id != "" &&
-      cybr-sh_sync_policy.syncpolicycreate.id != ""
+      cyberark_safe.safetesting.id != "" &&
+      cyberark_aws_account.awsaccountcreation.id != "" &&
+      cyberark_sync_policy.syncpolicycreate.id != ""
     ) ? "success" : "fail"
   )
 }

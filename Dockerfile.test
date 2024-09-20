@@ -25,7 +25,7 @@ RUN go install github.com/jstemmer/go-junit-report@latest && \
     go install github.com/AlekSi/gocov-xml@latest && \
     go install github.com/wadey/gocovmerge@latest
 
-WORKDIR /terraform-provider-cybr-sh
+WORKDIR /terraform-provider-cyberark
 
 CMD ["./bin/test-entrypoint.sh"]
 

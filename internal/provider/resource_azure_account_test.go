@@ -42,25 +42,25 @@ func TestAccAzureAccountResource(t *testing.T) {
 			{
 				Config: providerConfig + testAccAzureAccountCreateData(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "name", os.Getenv("TF_AZURE_NAME")),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "address", "1.2.3.4"),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "username", os.Getenv("TF_AZURE_USERNAME")),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "platform", "MS_Azure"),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "safe", "Testsafe"),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "secret", os.Getenv("TF_AZURE_SECRET")),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "sm_manage", "false"),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "sm_manage_reason", "No CPM Associated with Safe"),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "ms_app_id", os.Getenv("TF_AZURE_APP_ID")),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "ms_app_obj_id", os.Getenv("TF_AZURE_OBJ_ID")),
-					resource.TestCheckResourceAttr("cybr-sh_azure_account.test", "ms_key_id", os.Getenv("TF_AZURE_KEY_ID")),
-					resource.TestCheckResourceAttrSet("cybr-sh_azure_account.test", "id"),
-					resource.TestCheckResourceAttrSet("cybr-sh_azure_account.test", "last_updated"),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "name", os.Getenv("TF_AZURE_NAME")),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "address", "1.2.3.4"),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "username", os.Getenv("TF_AZURE_USERNAME")),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "platform", "MS_Azure"),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "safe", "Testsafe"),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "secret", os.Getenv("TF_AZURE_SECRET")),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "sm_manage", "false"),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "sm_manage_reason", "No CPM Associated with Safe"),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "ms_app_id", os.Getenv("TF_AZURE_APP_ID")),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "ms_app_obj_id", os.Getenv("TF_AZURE_OBJ_ID")),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "ms_key_id", os.Getenv("TF_AZURE_KEY_ID")),
+					resource.TestCheckResourceAttrSet("cyberark_azure_account.test", "id"),
+					resource.TestCheckResourceAttrSet("cyberark_azure_account.test", "last_updated"),
 				),
 			},
 			{
 				Config: providerConfig + `
 				  removed {
-					from = cybr-sh_azure_account.test
+					from = cyberark_azure_account.test
 					lifecycle {
 						destroy = false
 					}
@@ -73,7 +73,7 @@ func TestAccAzureAccountResource(t *testing.T) {
 
 func testAccAzureAccountCreateData() string {
 	return fmt.Sprintf(`
-	resource "cybr-sh_azure_account" "test" {
+	resource "cyberark_azure_account" "test" {
 		name             = %[1]q
 		address          = "1.2.3.4"
 		username         = %[2]q

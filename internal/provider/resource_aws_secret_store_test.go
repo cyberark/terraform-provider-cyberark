@@ -41,30 +41,30 @@ func TestAwsSecretStoreResource(t *testing.T) {
 			{
 				Config: providerConfig + testAWSSecretSyncPolicyCreateData(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cybr-sh_aws_secret_store.test", "name", "aws_store"),
-					resource.TestCheckResourceAttr("cybr-sh_aws_secret_store.test", "description", "AWS store for testing purpose"),
-					resource.TestCheckResourceAttr("cybr-sh_aws_secret_store.test", "aws_account_alias", os.Getenv("TF_AWS_ALIAS")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_secret_store.test", "aws_account_id", os.Getenv("TF_AWS_ACCOUNT_ID")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_secret_store.test", "aws_account_region", os.Getenv("TF_AWS_ACCOUNT_REGION")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_secret_store.test", "aws_iam_role", os.Getenv("TF_AWS_IAM_ROLE")),
-					resource.TestCheckResourceAttrSet("cybr-sh_aws_secret_store.test", "id"),
-					resource.TestCheckResourceAttrSet("cybr-sh_aws_secret_store.test", "last_updated"),
-					resource.TestCheckResourceAttr("cybr-sh_sync_policy.test", "name", "aws_policy"),
-					resource.TestCheckResourceAttr("cybr-sh_sync_policy.test", "description", "Policy description"),
-					resource.TestCheckResourceAttr("cybr-sh_sync_policy.test", "source_id", os.Getenv("TF_SOURCE_ID")),
-					resource.TestCheckResourceAttr("cybr-sh_sync_policy.test", "safe_name", "Testsafe"),
+					resource.TestCheckResourceAttr("cyberark_aws_secret_store.test", "name", "aws_store"),
+					resource.TestCheckResourceAttr("cyberark_aws_secret_store.test", "description", "AWS store for testing purpose"),
+					resource.TestCheckResourceAttr("cyberark_aws_secret_store.test", "aws_account_alias", os.Getenv("TF_AWS_ALIAS")),
+					resource.TestCheckResourceAttr("cyberark_aws_secret_store.test", "aws_account_id", os.Getenv("TF_AWS_ACCOUNT_ID")),
+					resource.TestCheckResourceAttr("cyberark_aws_secret_store.test", "aws_account_region", os.Getenv("TF_AWS_ACCOUNT_REGION")),
+					resource.TestCheckResourceAttr("cyberark_aws_secret_store.test", "aws_iam_role", os.Getenv("TF_AWS_IAM_ROLE")),
+					resource.TestCheckResourceAttrSet("cyberark_aws_secret_store.test", "id"),
+					resource.TestCheckResourceAttrSet("cyberark_aws_secret_store.test", "last_updated"),
+					resource.TestCheckResourceAttr("cyberark_sync_policy.test", "name", "aws_policy"),
+					resource.TestCheckResourceAttr("cyberark_sync_policy.test", "description", "Policy description"),
+					resource.TestCheckResourceAttr("cyberark_sync_policy.test", "source_id", os.Getenv("TF_SOURCE_ID")),
+					resource.TestCheckResourceAttr("cyberark_sync_policy.test", "safe_name", "Testsafe"),
 				),
 			},
 			{
 				Config: providerConfig + `
 				  removed {
-					from = cybr-sh_aws_secret_store.test
+					from = cyberark_aws_secret_store.test
 					lifecycle {
 						destroy = false
 					}
 				}
 				  removed {
-					from = cybr-sh_sync_policy.test
+					from = cyberark_sync_policy.test
 					lifecycle {
 						destroy = false
 				    }
@@ -76,7 +76,7 @@ func TestAwsSecretStoreResource(t *testing.T) {
 
 func testAWSSecretSyncPolicyCreateData() string {
 	return fmt.Sprintf(`
-    resource "cybr-sh_aws_secret_store" "test" {
+    resource "cyberark_aws_secret_store" "test" {
                     name               = "aws_store"
                     description        = "AWS store for testing purpose"
                     aws_account_alias  = %[1]q
@@ -85,13 +85,13 @@ func testAWSSecretSyncPolicyCreateData() string {
                     aws_iam_role       = %[4]q
                 }
 
-                resource "cybr-sh_sync_policy" "test" {
+                resource "cyberark_sync_policy" "test" {
                     name           = "aws_policy"
                     description    = "Policy description"
                     source_id      = %[5]q
-                    target_id      = cybr-sh_aws_secret_store.test.id
+                    target_id      = cyberark_aws_secret_store.test.id
                     safe_name      = "Testsafe"
-                    depends_on     = [cybr-sh_aws_secret_store.test]
+                    depends_on     = [cyberark_aws_secret_store.test]
                 }
     `, os.Getenv("TF_AWS_ALIAS"), os.Getenv("TF_AWS_ACCOUNT_ID"), os.Getenv("TF_AWS_ACCOUNT_REGION"), os.Getenv("TF_AWS_IAM_ROLE"),
 		os.Getenv("TF_SOURCE_ID"))

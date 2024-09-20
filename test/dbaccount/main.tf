@@ -27,22 +27,22 @@ variable "safename" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
   }
 }
 
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id     = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_db_account" "dbcreation" {
+resource "cyberark_db_account" "dbcreation" {
   name                        = var.db_username
   address                     = "1.2.3.4"
   username                    = var.db_username
@@ -59,6 +59,6 @@ resource "cybr-sh_db_account" "dbcreation" {
  
 output "status" {
   value = (
-    cybr-sh_db_account.dbcreation.id != "" ? "success" : "fail"
+    cyberark_db_account.dbcreation.id != "" ? "success" : "fail"
   )
 }

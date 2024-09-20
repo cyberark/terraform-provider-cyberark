@@ -6,8 +6,8 @@ services:
     environment:
       SECRETSHUB_VERSION:
     volumes:
-      - .:/terraform-provider-cybr-sh
-    working_dir: /terraform-provider-cybr-sh
+      - .:/terraform-provider-cyberark
+    working_dir: /terraform-provider-cyberark
   unit_tests:
     build:
       context: .
@@ -24,4 +24,4 @@ services:
       TF_AWS_IAM_ROLE:
       TF_SOURCE_ID:
     volumes:
-      - .:/terraform-provider-cybr-sh
+      - .:/terraform-provider-cyberark

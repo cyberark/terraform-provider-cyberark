@@ -20,7 +20,7 @@ build_and_package_binaries() {
   # Needed for testing stages
   goos='linux'  # uname -s | tr '[:upper:]' '[:lower:]'
   goarch="amd64"
-  cp dist/terraform-provider-cybr-sh_${goos}_${goarch}_v1/terraform-provider-cybr-sh_v* .
+  cp dist/terraform-provider-cyberark_${goos}_${goarch}_v1/terraform-provider-cyberark_v* .
 }
 
 repo_root() {

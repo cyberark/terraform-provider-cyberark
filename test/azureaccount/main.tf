@@ -31,22 +31,22 @@ variable "ms_key_id" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
   }
 }
 
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id     = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_azure_account" "msaccountcreation" {
+resource "cyberark_azure_account" "msaccountcreation" {
   name             = var.azure_username
   address          = "1.3.3.1"
   username         = var.azure_username
@@ -63,6 +63,6 @@ resource "cybr-sh_azure_account" "msaccountcreation" {
 
 output "status" {
   value = (
-    cybr-sh_azure_account.msaccountcreation.id != "" ? "success" : "fail"
+    cyberark_azure_account.msaccountcreation.id != "" ? "success" : "fail"
   )
 }
