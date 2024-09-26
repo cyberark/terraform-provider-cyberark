@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -41,21 +41,21 @@ func TestSafeResource(t *testing.T) {
 			{
 				Config: providerConfig + testSafeCreateData(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "safe_name", os.Getenv("TF_SAFE_NAME")),
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "safe_desc", "This is for safe testing"),
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "member", "secretshub"),
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "member_type", "user"),
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "permission_level", "full"),
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "retention", "7"),
-					resource.TestCheckResourceAttr("cybr-sh_safe.test", "purge", "false"),
-					resource.TestCheckResourceAttrSet("cybr-sh_safe.test", "id"),
-					resource.TestCheckResourceAttrSet("cybr-sh_safe.test", "last_updated"),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "safe_name", os.Getenv("TF_SAFE_NAME")),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "safe_desc", "This is for safe testing"),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "member", "secretshub"),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "member_type", "user"),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "permission_level", "full"),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "retention", "7"),
+					resource.TestCheckResourceAttr("cyberark_safe.test", "purge", "false"),
+					resource.TestCheckResourceAttrSet("cyberark_safe.test", "id"),
+					resource.TestCheckResourceAttrSet("cyberark_safe.test", "last_updated"),
 				),
 			},
 			{
 				Config: providerConfig + `
 				  removed {
-					from = cybr-sh_safe.test
+					from = cyberark_safe.test
 					lifecycle {
 						destroy = false
 					}
@@ -68,7 +68,7 @@ func TestSafeResource(t *testing.T) {
 
 func testSafeCreateData() string {
 	return fmt.Sprintf(`
-	resource "cybr-sh_safe" "test" {
+	resource "cyberark_safe" "test" {
 		safe_name          = %[1]q
 		safe_desc          = "This is for safe testing"
 		member             = "secretshub"

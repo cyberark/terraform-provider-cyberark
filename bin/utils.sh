@@ -63,7 +63,7 @@ function deleteSecretStore() {
 function getPolicyID() {
   local dir=$1
   if [ -d "$dir" ]; then
-    jq -r '.resources[] | select(.type == "cybr-sh_sync_policy") | .instances[0].attributes.id' \
+    jq -r '.resources[] | select(.type == "cyberark_sync_policy") | .instances[0].attributes.id' \
       < "$dir/terraform.tfstate"
   fi
 }

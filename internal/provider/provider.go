@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	cybrapi "github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
+	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -40,7 +40,7 @@ type secretsHubProviderModel struct {
 
 // Metadata returns the provider type name.
 func (p *secretsHubProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "cybr-sh"
+	resp.TypeName = "cyberark"
 	resp.Version = p.version
 }
 

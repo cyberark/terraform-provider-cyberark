@@ -3,7 +3,7 @@ variable "secret_key" {
   sensitive = true
 }
 
-resource "cybr-sh_azure_account" "mskey" {
+resource "cyberark_azure_account" "mskey" {
   name             = "user-ms"
   address          = "1.2.3.4"
   username         = "user-ms"

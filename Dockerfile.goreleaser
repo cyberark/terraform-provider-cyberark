@@ -5,4 +5,4 @@ FROM goreleaser/goreleaser
 ENV GOTOOLCHAIN=auto
 
 # Workaround for CVE-2022-24765 when running git inside a docker container
-RUN git config --global --add safe.directory /terraform-provider-cybr-sh
+RUN git config --global --add safe.directory /terraform-provider-cyberark

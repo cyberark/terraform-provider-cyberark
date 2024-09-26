@@ -1,54 +1,53 @@
 package provider_test
 
 import (
-    "context"
-    "fmt"
-    "os"
-    "testing"
+	"context"
+	"fmt"
+	"os"
+	"testing"
 
-    "github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
-    fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
+	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 
-    "github.com/hashicorp/terraform-plugin-framework/providerserver"
-    "github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 var (
-    providerConfig = testProviderConfigData()
+	providerConfig = testProviderConfigData()
 )
 
-
 var (
-    testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-        "cybr-sh": providerserver.NewProtocol6WithError(provider.New("test")()),
-    }
+	testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
+		"cyberark": providerserver.NewProtocol6WithError(provider.New("test")()),
+	}
 )
 
 func TestProviderResourceSchema(t *testing.T) {
-    t.Parallel()
+	t.Parallel()
 
-    ctx := context.Background()
-    schemaRequest := fwprovider.SchemaRequest{}
-    schemaResponse := &fwprovider.SchemaResponse{}
+	ctx := context.Background()
+	schemaRequest := fwprovider.SchemaRequest{}
+	schemaResponse := &fwprovider.SchemaResponse{}
 
-    // Instantiate the provider.Provider and call its Schema method
-    provider.New("test")().Schema(ctx, schemaRequest, schemaResponse)
+	// Instantiate the provider.Provider and call its Schema method
+	provider.New("test")().Schema(ctx, schemaRequest, schemaResponse)
 
-    if schemaResponse.Diagnostics.HasError() {
-        t.Fatalf("Schema method diagnostics: %+v", schemaResponse.Diagnostics)
-    }
+	if schemaResponse.Diagnostics.HasError() {
+		t.Fatalf("Schema method diagnostics: %+v", schemaResponse.Diagnostics)
+	}
 
-    // Validate the schema
-    diagnostics := schemaResponse.Schema.ValidateImplementation(ctx)
+	// Validate the schema
+	diagnostics := schemaResponse.Schema.ValidateImplementation(ctx)
 
-    if diagnostics.HasError() {
-        t.Fatalf("Schema validation diagnostics: %+v", diagnostics)
-    }
+	if diagnostics.HasError() {
+		t.Fatalf("Schema validation diagnostics: %+v", diagnostics)
+	}
 }
 
 func testProviderConfigData() string {
-    return fmt.Sprintf(`
-        provider "cybr-sh" {
+	return fmt.Sprintf(`
+        provider "cyberark" {
             tenant        = %[1]q
             domain        = %[2]q
             client_id     = %[3]q

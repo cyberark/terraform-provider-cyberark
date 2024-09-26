@@ -1,13 +1,13 @@
 # all available options: https://goreleaser.com/customization/
 
 version: 2
-project_name: terraform-provider-cybr-sh
+project_name: terraform-provider-cyberark
 
 before:
   hooks: []
 
 builds:
-  - binary: terraform-provider-cybr-sh_v{{.Env.SECRETSHUB_VERSION}}
+  - binary: terraform-provider-cyberark_v{{.Env.SECRETSHUB_VERSION}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -20,8 +20,8 @@ builds:
       - '-s -w -X main.version={{.Env.SECRETSHUB_VERSION}} -X main.commit={{.Commit}}'
 
   # Apple silicon support
-  - id: terraform-provider-cybr-sh-arm
-    binary: terraform-provider-cybr-sh_v{{.Env.SECRETSHUB_VERSION}}
+  - id: terraform-provider-cyberark-arm
+    binary: terraform-provider-cyberark_v{{.Env.SECRETSHUB_VERSION}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -44,8 +44,8 @@ checksum:
 
 brews:
   - description: Terraform provider for Secretshub
-    homepage: https://github.com/aharriscybr/terraform-provider-cybr-sh
-    url_template: https://github.com/aharriscybr/terraform-provider-cybr-sh/releases/download/v{{.Env.SECRETSHUB_VERSION}}/{{.ProjectName}}_{{.Env.SECRETSHUB_VERSION}}_{{.Os}}_{{.Arch}}.zip
+    homepage: https://github.com/cyberark/terraform-provider-cyberark
+    url_template: https://github.com/cyberark/terraform-provider-cyberark/releases/download/v{{.Env.SECRETSHUB_VERSION}}/{{.ProjectName}}_{{.Env.SECRETSHUB_VERSION}}_{{.Os}}_{{.Arch}}.zip
     caveats: |
       After installation, you must symlink the provider into Terraform's plugins directory.
       Symlinking is necessary because Homebrew is sandboxed and cannot write to your home directory.
@@ -54,17 +54,17 @@ brews:
       mkdir -p ~/.terraform.d/plugins/
 
       # Remove any old unversioned plugins (if applicable)
-      rm -f  ~/.terraform.d/plugins/terraform-provider-cybr-sh
+      rm -f  ~/.terraform.d/plugins/terraform-provider-cyberark
 
       # Symlink the provider to your home dir. If Homebrew is installing somewhere other than /usr/local/Cellar, update the path as well.
-      ln -sf /usr/local/Cellar/terraform-provider-cybr-sh/{{.Env.SECRETSHUB_VERSION}}/bin/terraform-provider-cybr-sh_v{{.Env.SECRETSHUB_VERSION}} ~/.terraform.d/plugins/terraform-provider-cybr-sh_v{{.Env.SECRETSHUB_VERSION}}
+      ln -sf /usr/local/Cellar/terraform-provider-cyberark/{{.Env.SECRETSHUB_VERSION}}/bin/terraform-provider-cyberark_v{{.Env.SECRETSHUB_VERSION}} ~/.terraform.d/plugins/terraform-provider-cyberark_v{{.Env.SECRETSHUB_VERSION}}
     dependencies:
       - terraform
     install: |
-      bin.install "terraform-provider-cybr-sh_v{{.Env.SECRETSHUB_VERSION}}"
+      bin.install "terraform-provider-cyberark_v{{.Env.SECRETSHUB_VERSION}}"
     test: |
       # Running bin directly gives error, exit code 1
-      system "#{bin}/terraform-provider-cybr-sh_v{{.Env.SECRETSHUB_VERSION}}", "-h"
+      system "#{bin}/terraform-provider-cyberark_v{{.Env.SECRETSHUB_VERSION}}", "-h"
     repository:
       owner: cyberark
       name: homebrew-tools

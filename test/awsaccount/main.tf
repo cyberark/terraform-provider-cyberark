@@ -32,22 +32,22 @@ variable "aws_key_id" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
   }
 }
 
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id     = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_aws_account" "awsaccountcreation" {
+resource "cyberark_aws_account" "awsaccountcreation" {
   name              = var.aws_username
   username          = var.aws_username
   platform          = "AWSAccessKeys"
@@ -63,6 +63,6 @@ resource "cybr-sh_aws_account" "awsaccountcreation" {
 
 output "status" {
   value = (
-    cybr-sh_aws_account.awsaccountcreation.id != "" ? "success" : "fail"
+    cyberark_aws_account.awsaccountcreation.id != "" ? "success" : "fail"
   )
 }

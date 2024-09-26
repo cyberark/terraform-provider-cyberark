@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/cyberark"
+	"github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -23,22 +23,22 @@ variable "safename" {}
 
 terraform {
   required_providers {
-    cybr-sh = {
-      source = "example/cyberark/cybr-sh"
+    cyberark = {
+      source = "example/cyberark/cyberark"
       version = "~> 0"
     }
   }
 }
 
 
-provider "cybr-sh" {
+provider "cyberark" {
   tenant       = var.tenant_name
   domain       = var.domain
   client_id     = var.client_id
   client_secret = var.client_secret
 }
 
-resource "cybr-sh_sync_policy" "syncpolicycreate" {
+resource "cyberark_sync_policy" "syncpolicycreate" {
   name              = var.policy_name
   description       = "Policy description"
   source_id         = var.source_p_cloud_id
@@ -48,6 +48,6 @@ resource "cybr-sh_sync_policy" "syncpolicycreate" {
 
 output "status" {
   value = (
-    cybr-sh_sync_policy.syncpolicycreate.id != "" ? "success" : "fail"
+    cyberark_sync_policy.syncpolicycreate.id != "" ? "success" : "fail"
   )
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 
@@ -42,25 +42,25 @@ func TestAccAwsAccountResource(t *testing.T) {
 			{
 				Config: providerConfig + testAccAWSAccountCreateData(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "name", os.Getenv("TF_AWS_NAME")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "username", os.Getenv("TF_AWS_USERNAME")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "platform", "AWSAccessKeys"),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "safe", "Testsafe"),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "secret", os.Getenv("TF_AWS_SECRET")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "sm_manage", "false"),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "sm_manage_reason", "No CPM Associated with Safe."),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "aws_kid", os.Getenv("TF_AWS_KEY_ID")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "aws_account_id", os.Getenv("TF_AWS_ACCOUNT_ID")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "aws_alias", os.Getenv("TF_AWS_ALIAS")),
-					resource.TestCheckResourceAttr("cybr-sh_aws_account.test", "aws_account_region", os.Getenv("TF_AWS_ACCOUNT_REGION")),
-					resource.TestCheckResourceAttrSet("cybr-sh_aws_account.test", "id"),
-					resource.TestCheckResourceAttrSet("cybr-sh_aws_account.test", "last_updated"),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "name", os.Getenv("TF_AWS_NAME")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "username", os.Getenv("TF_AWS_USERNAME")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "platform", "AWSAccessKeys"),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "safe", "Testsafe"),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "secret", os.Getenv("TF_AWS_SECRET")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "sm_manage", "false"),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "sm_manage_reason", "No CPM Associated with Safe."),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_kid", os.Getenv("TF_AWS_KEY_ID")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_account_id", os.Getenv("TF_AWS_ACCOUNT_ID")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_alias", os.Getenv("TF_AWS_ALIAS")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_account_region", os.Getenv("TF_AWS_ACCOUNT_REGION")),
+					resource.TestCheckResourceAttrSet("cyberark_aws_account.test", "id"),
+					resource.TestCheckResourceAttrSet("cyberark_aws_account.test", "last_updated"),
 				),
 			},
 			{
 				Config: providerConfig + `
 				  removed {
-					from = cybr-sh_aws_account.test
+					from = cyberark_aws_account.test
 					lifecycle {
 						destroy = false
 					}
@@ -73,7 +73,7 @@ func TestAccAwsAccountResource(t *testing.T) {
 
 func testAccAWSAccountCreateData() string {
 	return fmt.Sprintf(`
-	resource "cybr-sh_aws_account" "test" {
+	resource "cyberark_aws_account" "test" {
 		name               = %[1]q
 		username           = %[2]q
 		platform           = "AWSAccessKeys"

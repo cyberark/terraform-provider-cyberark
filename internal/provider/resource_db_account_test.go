@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aharriscybr/terraform-provider-cybr-sh/internal/provider"
+	"github.com/cyberark/terraform-provider-cyberark/internal/provider"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -40,26 +40,26 @@ func TestAccDBAccountResource(t *testing.T) {
 			{
 				Config: providerConfig + testAccDBAccountCreateData(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "name", os.Getenv("TF_DB_NAME")),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "address", "1.2.3.4"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "username", os.Getenv("TF_DB_USERNAME")),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "platform", "MySQL"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "safe", "Testsafe"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "secret", os.Getenv("TF_DB_SECRET")),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "secret_name_in_secret_store", "user"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "sm_manage", "false"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "sm_manage_reason", "No CPM Associated with Safe"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "db_port", "8432"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "db_dsn", "dsn"),
-					resource.TestCheckResourceAttr("cybr-sh_db_account.test", "dbname", "dbo.services"),
-					resource.TestCheckResourceAttrSet("cybr-sh_db_account.test", "id"),
-					resource.TestCheckResourceAttrSet("cybr-sh_db_account.test", "last_updated"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "name", os.Getenv("TF_DB_NAME")),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "address", "1.2.3.4"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "username", os.Getenv("TF_DB_USERNAME")),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "platform", "MySQL"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "safe", "Testsafe"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "secret", os.Getenv("TF_DB_SECRET")),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "secret_name_in_secret_store", "user"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "sm_manage", "false"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "sm_manage_reason", "No CPM Associated with Safe"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "db_port", "8432"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "db_dsn", "dsn"),
+					resource.TestCheckResourceAttr("cyberark_db_account.test", "dbname", "dbo.services"),
+					resource.TestCheckResourceAttrSet("cyberark_db_account.test", "id"),
+					resource.TestCheckResourceAttrSet("cyberark_db_account.test", "last_updated"),
 				),
 			},
 			{
 				Config: providerConfig + `
 				  removed {
-					from = cybr-sh_db_account.test
+					from = cyberark_db_account.test
 					lifecycle {
 						destroy = false
 					}
@@ -72,7 +72,7 @@ func TestAccDBAccountResource(t *testing.T) {
 
 func testAccDBAccountCreateData() string {
 	return fmt.Sprintf(`
-	resource "cybr-sh_db_account" "test" {
+	resource "cyberark_db_account" "test" {
 		name                        = %[1]q
 		address                     = "1.2.3.4"
 		username                    = %[2]q
