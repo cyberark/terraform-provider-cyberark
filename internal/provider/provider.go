@@ -223,6 +223,7 @@ func (p *secretsHubProvider) Resources(_ context.Context) []func() resource.Reso
 		NewAzureSecretStoreResource,
 		NewDBAccountResource,
 		NewSafeResource,
+		NewPVWASafeResource,
 		NewSyncPolicyResource,
 	}
 }

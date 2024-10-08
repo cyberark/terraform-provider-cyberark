@@ -145,6 +145,7 @@ type SafeData struct {
 	OwnerType            *string `json:"memberType,omitempty"`
 	Level                *string `json:"omitempty"`
 	LastModificationTime *int64  `json:"lastModificationTime,omitempty"`
+	EnableOLAC           *bool   `json:"enableOLAC,omitempty"`
 }
 
 // API represents the CyberArk's SecretsHub and PAM API
