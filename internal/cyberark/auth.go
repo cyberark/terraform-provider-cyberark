@@ -14,13 +14,13 @@ type TokenFetcher interface {
 	GetToken(clientID string, clientSecret []byte) (string, error)
 }
 
-// AuthAPI provides methods for fetching identity tokens.
-type AuthAPI struct {
+// IdentityAuthAPI provides methods for fetching identity tokens.
+type IdentityAuthAPI struct {
 	client *Client
 }
 
 // GetIdentityToken fetches an identity token using the provided client ID and client secret.
-func (a *AuthAPI) GetToken(ctx context.Context, clientID string, clientSecret []byte) ([]byte, error) {
+func (a *IdentityAuthAPI) GetToken(ctx context.Context, clientID string, clientSecret []byte) ([]byte, error) {
 	body := strings.NewReader(fmt.Sprintf("client_id=%s&grant_type=client_credentials&client_secret=%s",
 		url.QueryEscape(clientID),
 		url.QueryEscape(string(clientSecret))))
@@ -52,9 +52,9 @@ func (a *AuthAPI) GetToken(ctx context.Context, clientID string, clientSecret []
 	return []byte(*tokenResponse.AccessToken), nil
 }
 
-// NewAuthAPI creates a new AuthAPI instance with the provided base URL.
-func NewAuthAPI(baseURL string) *AuthAPI {
-	return &AuthAPI{
+// NewIdentityAuthAPI creates a new IdentityAuthAPI instance with the provided base URL.
+func NewIdentityAuthAPI(baseURL string) *IdentityAuthAPI {
+	return &IdentityAuthAPI{
 		client: NewClient(baseURL, false),
 	}
 }

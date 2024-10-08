@@ -84,9 +84,9 @@ func (p *secretsHubProvider) Configure(ctx context.Context, req provider.Configu
 	d := data.Domain.ValueString()
 
 	// Create a client for Cyberark ISPSS (Identity Security Platform Shared Services)
-	authAPI := cybrapi.NewAuthAPI(fmt.Sprintf(cloudAuthURL, t))
+	identityAuthAPI := cybrapi.NewIdentityAuthAPI(fmt.Sprintf(cloudAuthURL, t))
 
-	token, err := authAPI.GetToken(ctx, cid, []byte(data.ClientSecret.ValueString()))
+	token, err := identityAuthAPI.GetToken(ctx, cid, []byte(data.ClientSecret.ValueString()))
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get authentication token",

@@ -33,10 +33,10 @@ func TestGetToken(t *testing.T) {
 		defer server.Close()
 
 		// Create a new AuthApi instance with the test server's URL
-		authAPI := cyberark.NewAuthAPI(server.URL)
+		identityAuthAPI := cyberark.NewIdentityAuthAPI(server.URL)
 
 		// Call GetToken and check the returned token and error
-		resp, err := authAPI.GetToken(context.Background(), clientID, clientSecret)
+		resp, err := identityAuthAPI.GetToken(context.Background(), clientID, clientSecret)
 
 		assert.NoError(t, err)
 		assert.Equal(t, token, resp)
@@ -48,9 +48,9 @@ func TestGetToken(t *testing.T) {
 		}))
 		defer server.Close()
 
-		authAPI := cyberark.NewAuthAPI(server.URL)
+		identityAuthAPI := cyberark.NewIdentityAuthAPI(server.URL)
 
-		resp, err := authAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
+		resp, err := identityAuthAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -62,9 +62,9 @@ func TestGetToken(t *testing.T) {
 		}))
 		defer server.Close()
 
-		authAPI := cyberark.NewAuthAPI(server.URL)
+		identityAuthAPI := cyberark.NewIdentityAuthAPI(server.URL)
 
-		resp, err := authAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
+		resp, err := identityAuthAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -76,9 +76,9 @@ func TestGetToken(t *testing.T) {
 		}))
 		defer server.Close()
 
-		authAPI := cyberark.NewAuthAPI(server.URL)
+		identityAuthAPI := cyberark.NewIdentityAuthAPI(server.URL)
 
-		resp, err := authAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
+		resp, err := identityAuthAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
