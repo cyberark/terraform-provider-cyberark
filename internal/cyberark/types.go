@@ -151,6 +151,7 @@ type SafeData struct {
 type API struct {
 	PamAPI        PAMAPI
 	SecretsHubAPI SecretsHubAPI
+	PVWAAPI       PAMAPI
 }
 
 // Secret stores API

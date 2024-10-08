@@ -16,7 +16,8 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ provider.Provider = &secretsHubProvider{}
+	_ provider.Provider                   = &secretsHubProvider{}
+	_ provider.ProviderWithValidateConfig = &secretsHubProvider{}
 )
 
 const (
@@ -32,10 +33,14 @@ type secretsHubProvider struct {
 
 // secretsHubProviderModel describes the provider data model.
 type secretsHubProviderModel struct {
-	Tenant       types.String `tfsdk:"tenant"`
-	ClientID     types.String `tfsdk:"client_id"`
-	ClientSecret types.String `tfsdk:"client_secret"`
-	Domain       types.String `tfsdk:"domain"`
+	Tenant          types.String `tfsdk:"tenant"`
+	ClientID        types.String `tfsdk:"client_id"`
+	ClientSecret    types.String `tfsdk:"client_secret"`
+	Domain          types.String `tfsdk:"domain"`
+	PVWAUsername    types.String `tfsdk:"pvwa_username"`
+	PVWAPassword    types.String `tfsdk:"pvwa_password"`
+	PVWAURL         types.String `tfsdk:"pvwa_url"`
+	PVWALoginMethod types.String `tfsdk:"pvwa_login_method"`
 }
 
 // Metadata returns the provider type name.
@@ -66,7 +71,77 @@ func (p *secretsHubProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 				Description: "CyberArk Privilege Cloud Domain.",
 				Required:    true,
 			},
+			"pvwa_username": schema.StringAttribute{
+				Description: "CyberArk PVWA Username.",
+				Optional:    true,
+			},
+			"pvwa_password": schema.StringAttribute{
+				Description: "CyberArk PVWA Password.",
+				Optional:    true,
+				Sensitive:   true,
+			},
+			"pvwa_url": schema.StringAttribute{
+				Description: "CyberArk PVWA URL.",
+				Optional:    true,
+			},
+			"pvwa_login_method": schema.StringAttribute{
+				Description: "CyberArk PVWA Login Method.",
+				Optional:    true,
+			},
 		},
+	}
+}
+
+// ValidateConfig validates the configuration data.
+func (p *secretsHubProvider) ValidateConfig(ctx context.Context, req provider.ValidateConfigRequest, resp *provider.ValidateConfigResponse) {
+	var data secretsHubProviderModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate PVWA Login Method
+	validPVWALoginMethods := []string{"cyberark", "ldap", "windows", "radius"}
+	if data.PVWALoginMethod.ValueString() != "" {
+		valid := false
+		for _, method := range validPVWALoginMethods {
+			if data.PVWALoginMethod.ValueString() == method {
+				valid = true
+				break
+			}
+		}
+
+		if !valid {
+			resp.Diagnostics.AddError("Invalid PVWA Login Method",
+				fmt.Sprintf("Invalid PVWA Login Method: %s. Valid methods are: %v", data.PVWALoginMethod.ValueString(), validPVWALoginMethods))
+		}
+	}
+
+	// Validate PVWA attributes (not including PVWA Login Method which defaults to "cyberark")
+	pvwaAttributes := map[string]types.String{
+		"pvwa_username": data.PVWAUsername,
+		"pvwa_password": data.PVWAPassword,
+		"pvwa_url":      data.PVWAURL,
+	}
+
+	// Check if any PVWA attribute is set
+	anySet := false
+	for _, attr := range pvwaAttributes {
+		if attr.ValueString() != "" {
+			anySet = true
+			break
+		}
+	}
+
+	// If any PVWA attribute is set, ensure all are set
+	if anySet {
+		for name, attr := range pvwaAttributes {
+			if attr.ValueString() == "" {
+				resp.Diagnostics.AddError("Missing PVWA Attribute",
+					fmt.Sprintf("Missing PVWA attribute: %s", name))
+			}
+		}
 	}
 }
 
@@ -100,13 +175,35 @@ func (p *secretsHubProvider) Configure(ctx context.Context, req provider.Configu
 	// Create a client for Cyberark SecretsHub
 	secretsHubAPI := cybrapi.NewSecretsHubAPI(fmt.Sprintf(cloudSecretsHubURL, d), token)
 
+	var pvwaAPI cybrapi.PAMAPI = nil
+	if data.PVWAURL.ValueString() != "" {
+		// Default to "cyberark" login method if not set
+		loginMethod := "cyberark"
+		if data.PVWALoginMethod.ValueString() != "" {
+			loginMethod = data.PVWALoginMethod.ValueString()
+		}
+
+		pvwaAuthAPI := cybrapi.NewPVWAAuthAPI(data.PVWAURL.ValueString(), loginMethod)
+		pvwaToken, err := pvwaAuthAPI.GetToken(ctx, data.PVWAUsername.ValueString(), []byte(data.PVWAPassword.ValueString()))
+
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to get PVWA authentication token",
+				fmt.Sprintf("Failed to get authentication token from Cyberark PVWA service: %+v", err))
+			return
+		}
+
+		pvwaAPI = cybrapi.NewPAMAPI(data.PVWAURL.ValueString(), pvwaToken, false)
+	}
+
 	resp.DataSourceData = &cybrapi.API{
 		PamAPI:        pamAPI,
 		SecretsHubAPI: secretsHubAPI,
+		PVWAAPI:       pvwaAPI,
 	}
 	resp.ResourceData = &cybrapi.API{
 		PamAPI:        pamAPI,
 		SecretsHubAPI: secretsHubAPI,
+		PVWAAPI:       pvwaAPI,
 	}
 }
 
