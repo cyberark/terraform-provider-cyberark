@@ -218,6 +218,7 @@ func (p *secretsHubProvider) DataSources(_ context.Context) []func() datasource.
 func (p *secretsHubProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAWSAccountResource,
+		NewPVWAAWSAccountResource,
 		NewAWSSecretStoreResource,
 		NewAzureAccountResource,
 		NewAzureSecretStoreResource,
