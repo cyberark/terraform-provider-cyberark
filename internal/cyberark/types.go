@@ -38,8 +38,8 @@ type Member struct {
 
 // Shared Services Structs
 
-// Token represents the token response from the authentication endpoint
-type Token struct {
+// IdentityToken represents the token response from the authentication endpoint
+type IdentityToken struct {
 	AccessToken *string `json:"access_token"`
 	TokenType   *string `json:"token_type"`
 	ExpiresIn   *int    `json:"expires_in"`
