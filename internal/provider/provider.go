@@ -221,6 +221,7 @@ func (p *secretsHubProvider) Resources(_ context.Context) []func() resource.Reso
 		NewPVWAAWSAccountResource,
 		NewAWSSecretStoreResource,
 		NewAzureAccountResource,
+		NewPVWAAzureAccountResource,
 		NewAzureSecretStoreResource,
 		NewDBAccountResource,
 		NewSafeResource,
