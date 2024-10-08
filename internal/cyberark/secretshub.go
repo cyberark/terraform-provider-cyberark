@@ -356,7 +356,7 @@ func (a *secretsHubAPI) DeleteSyncPolicy(_ context.Context) {
 // NewSecretsHubAPI creates a new SecretsHubAPI client.
 func NewSecretsHubAPI(baseURL string, authToken []byte) SecretsHubAPI {
 	return &secretsHubAPI{
-		client:    NewClientWithToken(baseURL, true, authToken),
+		client:    NewClientWithToken(baseURL, true, authToken, true),
 		authToken: authToken,
 	}
 }

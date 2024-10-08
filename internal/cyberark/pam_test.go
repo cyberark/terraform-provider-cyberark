@@ -46,7 +46,7 @@ func TestAddAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		credentials := cyberark.Credential{
 			Name: &name,
@@ -69,7 +69,7 @@ func TestAddAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		credentials := cyberark.Credential{
 			Name: &name,
@@ -87,7 +87,7 @@ func TestAddAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		credentials := cyberark.Credential{
 			Name: &name,
@@ -105,7 +105,7 @@ func TestAddAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		credentials := cyberark.Credential{
 			Name: &name,
@@ -132,7 +132,7 @@ func TestGetAccount(t *testing.T) {
 			CredID: &credID,
 			Name:   &name,
 		}
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.GetAccount(context.Background(), "test_account")
 
@@ -147,7 +147,7 @@ func TestGetAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.GetAccount(context.Background(), "test_account")
 
@@ -161,7 +161,7 @@ func TestGetAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.GetAccount(context.Background(), "test_account")
 
@@ -196,7 +196,7 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 			},
 			Count: &count,
 		}
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.FilterAccounts(context.Background(), name, []string{fmt.Sprintf("safeName eq %s", safe)})
 
@@ -229,7 +229,7 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 			},
 			Count: &count,
 		}
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.FilterAccounts(context.Background(), name, nil)
 
@@ -262,7 +262,7 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 			},
 			Count: &count,
 		}
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.FilterAccounts(context.Background(), "", []string{fmt.Sprintf("safeName eq %s", safe)})
 
@@ -276,7 +276,7 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.FilterAccounts(context.Background(), "", nil)
 
@@ -291,7 +291,7 @@ func TestUpdateAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.UpdateAccount(context.Background())
 	})
 }
@@ -302,7 +302,7 @@ func TestDeleteAccount(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.DeleteAccount(context.Background())
 	})
 }
@@ -320,7 +320,7 @@ func TestAddSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		safe := cyberark.SafeData{
 			Name:   &safe,
@@ -340,7 +340,7 @@ func TestAddSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		safe := cyberark.SafeData{
 			Name: &safe,
@@ -358,7 +358,7 @@ func TestAddSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		safe := cyberark.SafeData{
 			Name: &safe,
@@ -376,7 +376,7 @@ func TestAddSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		safe := cyberark.SafeData{
 			Name: &safe,
@@ -404,7 +404,7 @@ func TestGetSafe(t *testing.T) {
 			Name: &safe,
 		}
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.GetSafe(context.Background(), safe)
 
@@ -418,7 +418,7 @@ func TestGetSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.GetSafe(context.Background(), "test_safe_id")
 
@@ -432,7 +432,7 @@ func TestGetSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		resp, err := client.GetSafe(context.Background(), "test_safe_id")
 
@@ -447,7 +447,7 @@ func TestUpdateSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.UpdateSafe(context.Background())
 	})
 }
@@ -458,7 +458,7 @@ func TestDeleteSafe(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.DeleteSafe(context.Background())
 	})
 }
@@ -499,7 +499,7 @@ func TestAddSafeMember(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := cyberark.NewPAMAPI(server.URL, token)
+			client := cyberark.NewPAMAPI(server.URL, token, true)
 
 			safe := cyberark.SafeData{
 				Name:      &name,
@@ -521,7 +521,7 @@ func TestAddSafeMember(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		safe := cyberark.SafeData{
 			Name:      &name,
@@ -541,7 +541,7 @@ func TestAddSafeMember(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		safe := cyberark.SafeData{
 			Name:      &name,
@@ -562,7 +562,7 @@ func TestGetSafeMember(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.GetSafeMember(context.Background())
 	})
 }
@@ -573,7 +573,7 @@ func TestUpdateSafeMember(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.UpdateSafeMember(context.Background())
 	})
 }
@@ -584,7 +584,7 @@ func TestDeleteSafeMember(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := cyberark.NewPAMAPI(server.URL, token)
+		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.DeleteSafeMember(context.Background())
 	})
 }

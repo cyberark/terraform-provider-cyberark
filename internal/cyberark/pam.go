@@ -299,9 +299,9 @@ func (a *pamAPI) DeleteSafeMember(_ context.Context) {
 }
 
 // NewPAMAPI creates a new PAMAPI client.
-func NewPAMAPI(baseURL string, authToken []byte) PAMAPI {
+func NewPAMAPI(baseURL string, authToken []byte, withBearerToken bool) PAMAPI {
 	return &pamAPI{
-		client:    NewClientWithToken(baseURL, true, authToken),
+		client:    NewClientWithToken(baseURL, true, authToken, withBearerToken),
 		authToken: authToken,
 	}
 }

@@ -95,7 +95,7 @@ func (p *secretsHubProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	// Create a client for Cyberark PAM
-	pamAPI := cybrapi.NewPAMAPI(fmt.Sprintf(cloudPamURL, d), token)
+	pamAPI := cybrapi.NewPAMAPI(fmt.Sprintf(cloudPamURL, d), token, true)
 
 	// Create a client for Cyberark SecretsHub
 	secretsHubAPI := cybrapi.NewSecretsHubAPI(fmt.Sprintf(cloudSecretsHubURL, d), token)

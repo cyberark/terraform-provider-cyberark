@@ -14,10 +14,11 @@ import (
 
 // Client is a client for interacting with the SecretsHub APIs.
 type Client struct {
-	httpClient  *http.Client
-	baseURL     string
-	AuthToken   []byte
-	logResponse bool
+	httpClient      *http.Client
+	baseURL         string
+	AuthToken       []byte
+	logResponse     bool
+	WithBearerToken bool
 }
 
 // DoRequest sends an HTTP request to the CyberArk API.
@@ -33,7 +34,11 @@ func (c *Client) DoRequest(ctx context.Context, method string, path string, body
 	authToken := string(c.AuthToken)
 	if authToken != "" {
 		// Set the Authorization header to include the auth token.
-		req.Header.Set("Authorization", "Bearer "+authToken)
+		auth := "Bearer " + authToken
+		if !c.WithBearerToken {
+			auth = authToken
+		}
+		req.Header.Set("Authorization", auth)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -71,25 +76,27 @@ func (c *Client) DoRequest(ctx context.Context, method string, path string, body
 }
 
 // NewClient creates a new Client instance with the provided base URL.
-func NewClient(baseURL string, logResponse bool) *Client {
+func NewClient(baseURL string, logResponse bool, withBearerToken bool) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		baseURL:     baseURL,
-		logResponse: logResponse,
+		baseURL:         baseURL,
+		logResponse:     logResponse,
+		WithBearerToken: withBearerToken,
 	}
 }
 
 // NewClientWithToken creates a new Client instance with the provided base URL and auth token.
-func NewClientWithToken(baseURL string, logResponse bool, authToken []byte) *Client {
+func NewClientWithToken(baseURL string, logResponse bool, authToken []byte, withBearerToken bool) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		baseURL:     baseURL,
-		logResponse: logResponse,
-		AuthToken:   authToken,
+		baseURL:         baseURL,
+		logResponse:     logResponse,
+		AuthToken:       authToken,
+		WithBearerToken: withBearerToken,
 	}
 }
 

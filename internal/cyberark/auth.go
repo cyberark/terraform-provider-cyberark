@@ -55,6 +55,6 @@ func (a *IdentityAuthAPI) GetToken(ctx context.Context, clientID string, clientS
 // NewIdentityAuthAPI creates a new IdentityAuthAPI instance with the provided base URL.
 func NewIdentityAuthAPI(baseURL string) *IdentityAuthAPI {
 	return &IdentityAuthAPI{
-		client: NewClient(baseURL, false),
+		client: NewClient(baseURL, false, true),
 	}
 }
