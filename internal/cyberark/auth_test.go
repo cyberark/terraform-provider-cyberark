@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetIdentityToken(t *testing.T) {
-	t.Run("GetIdentityToken", func(t *testing.T) {
+func TestGetToken(t *testing.T) {
+	t.Run("GetToken", func(t *testing.T) {
 		clientID := "test_client_id"
 		clientSecret := []byte("test_client_secret")
 		token := []byte("dummy_token")
@@ -35,8 +35,8 @@ func TestGetIdentityToken(t *testing.T) {
 		// Create a new AuthApi instance with the test server's URL
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		// Call GetIdentityToken and check the returned token and error
-		resp, err := authAPI.GetIdentityToken(context.Background(), clientID, clientSecret)
+		// Call GetToken and check the returned token and error
+		resp, err := authAPI.GetToken(context.Background(), clientID, clientSecret)
 
 		assert.NoError(t, err)
 		assert.Equal(t, token, resp)
@@ -50,7 +50,7 @@ func TestGetIdentityToken(t *testing.T) {
 
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", []byte("test_client_secret"))
+		resp, err := authAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -64,7 +64,7 @@ func TestGetIdentityToken(t *testing.T) {
 
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", []byte("test_client_secret"))
+		resp, err := authAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -78,7 +78,7 @@ func TestGetIdentityToken(t *testing.T) {
 
 		authAPI := cyberark.NewAuthAPI(server.URL)
 
-		resp, err := authAPI.GetIdentityToken(context.Background(), "test_client_id", []byte("test_client_secret"))
+		resp, err := authAPI.GetToken(context.Background(), "test_client_id", []byte("test_client_secret"))
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)

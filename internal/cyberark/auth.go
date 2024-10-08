@@ -11,7 +11,7 @@ import (
 
 // TokenFetcher is an interface for fetching identity tokens.
 type TokenFetcher interface {
-	GetIdentityToken(clientID string, clientSecret []byte) (string, error)
+	GetToken(clientID string, clientSecret []byte) (string, error)
 }
 
 // AuthAPI provides methods for fetching identity tokens.
@@ -20,7 +20,7 @@ type AuthAPI struct {
 }
 
 // GetIdentityToken fetches an identity token using the provided client ID and client secret.
-func (a *AuthAPI) GetIdentityToken(ctx context.Context, clientID string, clientSecret []byte) ([]byte, error) {
+func (a *AuthAPI) GetToken(ctx context.Context, clientID string, clientSecret []byte) ([]byte, error) {
 	body := strings.NewReader(fmt.Sprintf("client_id=%s&grant_type=client_credentials&client_secret=%s",
 		url.QueryEscape(clientID),
 		url.QueryEscape(string(clientSecret))))
