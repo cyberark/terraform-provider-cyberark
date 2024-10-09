@@ -38,8 +38,8 @@ type Member struct {
 
 // Shared Services Structs
 
-// Token represents the token response from the authentication endpoint
-type Token struct {
+// IdentityToken represents the token response from the authentication endpoint
+type IdentityToken struct {
 	AccessToken *string `json:"access_token"`
 	TokenType   *string `json:"token_type"`
 	ExpiresIn   *int    `json:"expires_in"`
@@ -145,12 +145,14 @@ type SafeData struct {
 	OwnerType            *string `json:"memberType,omitempty"`
 	Level                *string `json:"omitempty"`
 	LastModificationTime *int64  `json:"lastModificationTime,omitempty"`
+	EnableOLAC           *bool   `json:"enableOLAC,omitempty"`
 }
 
 // API represents the CyberArk's SecretsHub and PAM API
 type API struct {
 	PamAPI        PAMAPI
 	SecretsHubAPI SecretsHubAPI
+	PVWAAPI       PAMAPI
 }
 
 // Secret stores API
