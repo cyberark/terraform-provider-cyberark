@@ -9,7 +9,7 @@ This topic describes how to integrate Terraform with Secrets Hub using the Cyber
 
 The CyberArk Terraform Provider is open source and available on GitHub.
 
-The CyberArk Terraform Provider has the ability to interact with CyberArk Cloud Resources(Privilege Cloud and Secrets Hub) and can create safes, accounts, secretstores and sync policies.
+The CyberArk Terraform Provider can interact with CyberArk resources including Privileged Cloud, PAM Self-Hosted, and Secrets Hub and can create safes, accounts, secret stores and sync policies.
 
 Note: Supported platforms for account creation are AWS, Azure, and MySQL databases.
 
