@@ -1,31 +1,31 @@
-## Terraform Provider Cyberark
+## CyberArk Terraform Provider
 
-This topic describes how to integrate Terraform with Secrets Hub using the Terraform Provider Cyberark.
+This topic describes how to integrate Terraform with Secrets Hub using the CyberArk Terraform Provider.
 
 ## Certification level
 ![](https://img.shields.io/badge/Certification%20Level-Certified-28A745?link=https://github.com/cyberark/community/blob/master/Conjur/conventions/certification-levels.md)
 
 ## Overview
 
-The Terraform Provider Cyberark is open source and available on GitHub.
+The CyberArk Terraform Provider is open source and available on GitHub.
 
-The Terraform Provider Cyberark has the ability to interact with CyberArk Cloud Resources(Privilege Cloud and Secrethubs) and can create safes, accounts, secretstores and sync policies.
+The CyberArk Terraform Provider has the ability to interact with CyberArk Cloud Resources(Privilege Cloud and Secrets Hub) and can create safes, accounts, secretstores and sync policies.
 
 Note: Supported platforms for account creation are AWS, Azure, and MySQL databases.
 
-The Terraform Provider Cyberark includes the following features and benefits:
+The CyberArk Terraform Provider includes the following features and benefits:
 
 Configuration in the Terraform manifest
 
 Provider authentication to CyberArk Identity Security Platform Shared Services
 
-A Provider can create the safe, accounts, Secretstores, sync policies in Privilege Cloud and Secrets Hub
+A Provider can create Safes and Accounts in CyberArk Privileged Cloud and PAM Self-Hosted, as well as Secret Stores and Sync Policies in Secrets Hub
 
-A Terraform-sensitive flag which may be used against any secrets to keep the value from appearing in logs and on-screen.
+Terraform's `sensitive` variable argument is used by default for sensitive values to keep the value from appearing in logs and on-screen.
 
-## Authentication 
+## Authentication
 
-The Terraform Provider Cyberark authenticates to CyberArk Identity Security Platform Shared Services with the service account and its credential.
+The CyberArk Terraform Provider authenticates to CyberArk Identity Security Platform Shared Services with the service account and its credential. When using PAM Self-Hosted, the provider authenticates with the on-prem PVWA instance.
 
 ### Set up Service Account
 
@@ -66,7 +66,7 @@ Assign the Privilege Cloud Safe Managers Role and the Secrets Manager - Secrets 
 
 ## Requirements
 
-Terraform Provider Cyberark requirements
+CyberArk Terraform Provider requirements
 
 ### Technology
 
@@ -79,13 +79,14 @@ Terraform Provider Cyberark requirements
 - An AWS account with the SecretHub IAM role is necessary.
 
 ## Supported platforms
+
 - macOS
 - Linux
 - Windows
 
-## Install the Terraform Provider Cyberark plugin
+## Install the CyberArk Terraform Provider plugin
 
-You can use any of the following methods to install the Terraform Provider Cyberark plugin:
+You can use any of the following methods to install the CyberArk Terraform Provider plugin:
 
 Install using binaries (Recommended)
 
@@ -97,13 +98,13 @@ Install using Homebrew (macOS only)
 
 ### Binaries (Recommended)
 
-We recommend installing the Terraform Provider Cyberark plugin (terraform-provider-cyberark) using the appropriate binary distribution for your environment.
+We recommend installing the CyberArk Terraform Provider plugin (terraform-provider-cyberark) using the appropriate binary distribution for your environment.
 
 In the following examples, replace `$VERSION` with the latest release for your operating system from the GitHub Releases page.
 
 Note: The following example uses a Linux binary.
 
-1. Download the Terraform Provider Cyberark (darwin_amd64 or linux_amd64):
+1. Download the CyberArk Terraform Provider (darwin_amd64 or linux_amd64):
 
 ```sh
 $  wget https://github.com/cyberark/terraform-provider-cyberark/releases/download/v$VERSION/terraform-provider-cyberark_$VERSION.linux_amd64.zip
@@ -125,7 +126,7 @@ $ rm -rf ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION
 ```
 
 ### Homebrew (MacOS)
-To install the Terraform Provider Cyberark using Homebrew:
+To install the CyberArk Terraform Provider using Homebrew:
 
 1. Add and update the CyberArk Tools Homebrew tap:
 
@@ -133,7 +134,7 @@ To install the Terraform Provider Cyberark using Homebrew:
 $ brew tap cyberark/tools
 ```
 
-2. Install the Terraform Provider Cyberark and symlink it to Terraform's plugins directory. Symlinking is necessary because Homebrew is sandboxed and cannot write to your home directory.
+2. Install the CyberArk Terraform Provider and symlink it to Terraform's plugins directory. Symlinking is necessary because Homebrew is sandboxed and cannot write to your home directory.
 
    Run the following, where $VERSION is the appropriate plugin version:
 _Note: Replace `$VERSION` with the appropriate plugin version_
@@ -164,9 +165,9 @@ $ mv terraform-provider-cyberark*/terraform-provider-cyberark* ~/.terraform.d/pl
 
 ### Compile from Source
 
-Before you compile the Terraform Provider Cyberark from the source code, make sure you have Go version 1.21 installed on your machine.
+Before you compile the CyberArk Terraform Provider from the source code, make sure you have Go version 1.21 installed on your machine.
 
-To compile the Terraform Provider Cyberark:
+To compile the CyberArk Terraform Provider:
 
 macOS/Linux
 
@@ -177,7 +178,7 @@ $ git clone https://github.com/cyberark/terraform-provider-cyberark.git
 $ cd terraform-provider-cyberark
 ```
 
-2. Build the Terraform Provider Cyberark
+2. Build the CyberArk Terraform Provider
 
 ```sh
 $ mkdir -p ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/$platform_reference_in_go
@@ -186,11 +187,9 @@ $ mkdir -p ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSI
 $ go build -o ~/.terraform.d/plugins/terraform.example.com/cyberark/cyberark/$VERSION/$platform_reference_in_go/terraform-provider-cyberark main.go
 ```
 
-
-
 ### Terraform registry
 
-To access the Terraform Provider Cyberark from the Terraform registry:
+To access the CyberArk Terraform Provider from the Terraform registry:
 
 In the main.tf configuration file:
 
@@ -231,11 +230,12 @@ resource "cyberark_safe" "AAM_Test_Safe" {
   safe_loc           = ""
 }
 ```
+
 ## Caution: Handling Sensitive Files
 
 Important: The Terraform state file and .tfvars files contain sensitive information related to your configurations. It is essential to handle these files with the utmost care to ensure their security.
 
-### Best Practices:
+### Best Practices
 
 - Keep Files Private: Ensure these files are not exposed to unauthorized individuals or systems.
 - Restrict Access: Limit access to these files to authorized personnel only.
@@ -243,22 +243,24 @@ Important: The Terraform state file and .tfvars files contain sensitive informat
 
 Following these practices helps safeguard your sensitive data.
 
-## Configure Terraform Provider Cyberark
+## Configure CyberArk Terraform Provider
 
-This section describes how to configure the Terraform Provider Cyberark.
+This section describes how to configure the CyberArk Terraform Provider.
 
 ### Workflow
 
-Terraform can be executed manually by the user. The Terraform Provider Cyberark reads the provider configuration and authenticates to the tenant using the service account and its credentials.
+Terraform can be executed manually by the user. The CyberArk Terraform Provider reads the provider configuration and authenticates to the tenant using the service account and its credentials.
 
 Once authenticated, it configures the resources according to the main.tf file. After setup, the resources can be viewed in Privilege Cloud and Secrets Hub.
 
-### Use environment variables to Sensitive Parameters:
+### Use environment variables for Sensitive Variables
 
 In order to use environment variables with Terraform Provider SecrestsHub use the Terraform variables and [standard mechanism]
 (https://developer.hashicorp.com/terraform/language/values/variables#environment-variables).
 
 ### Example
+
+#### Privileged Cloud
 
 ```terraform
 variable "secret_key" {
@@ -272,13 +274,68 @@ provider "cyberark" {
   client_id     = "automation@cyberark.cloud.aarp0000"
   client_secret = var.secret_key
 }
+
+resource "cyberark_safe" "PCloud_Test_Safe" {
+  safe_name          = "GEN_BY_TF_abc"
+  safe_desc          = "Description for GEN_BY_TF_abc"
+  member             = "demo@cyberark.cloud.aarp0000"
+  member_type        = "user"
+  permission_level   = "read" # full, read, approver, manager
+  retention          = 7
+  retention_versions = 7
+  purge              = false
+  cpm_name           = "PasswordManager"
+  safe_loc           = ""
+}
+```
+
+#### PAM Self-Hosted
+
+```terraform
+variable "secret_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "pvwa_password" {
+  type      = string
+  sensitive = true
+}
+
+provider "cyberark" {
+  tenant        = "aarp0000"
+  domain        = "example-domain"
+  client_id     = "automation@cyberark.cloud.aarp0000"
+  client_secret = var.secret_key
+
+  # For PAM Self-Hosted
+  pvwa_url      = "https://pvwa.example.com"
+  pvwa_username = "myUser"
+  pvwa_password = var.pvwa_password
+}
+
+resource "cyberark_pam_safe" "PAM_Test_Safe" {
+  safe_name          = "GEN_BY_TF_abc"
+  safe_desc          = "Description for GEN_BY_TF_abc"
+  member             = "demo@cyberark.cloud.aarp0000"
+  member_type        = "user"
+  permission_level   = "read" # full, read, approver, manager
+  retention          = 7
+  retention_versions = 7
+  purge              = false
+  cpm_name           = "PasswordManager"
+  safe_loc           = ""
+  enable_olac        = false
+}
 ```
 
 ```sh
 $ export TF_VAR_secret_key=my-secret-key
+$ export TF_VAR_pvwa_password=my-pvwa-password
 $ terraform init
 $ terraform plan
 ```
+
 ## Pre-requisties for Provider and Resources
 
 - A tenant with both Privilege Cloud and Secrets Hub is required.
@@ -293,12 +350,15 @@ $ terraform plan
 ## Documentation
 
 ### Provider
+
 [cyberark provider](docs/index.md)
 
 ### Data Sources
+
 - [Auth token](docs/data-sources/auth_token.md)
 
 ### Resources
+
 - [AWS Account](docs/resources/aws_account.md)
 - [AWS Secret Store](docs/resources/aws_secret_store.md)
 - [Azure Account](docs/resources/azure_account.md)
@@ -307,13 +367,14 @@ $ terraform plan
 - [Safe](docs/resources/safe.md)
 - [Sync Policy](docs/resources/sync_policy.md)
 
-
 ## Usage instructions
 
 See [here](examples/) for examples.
 
 ## Limitations
-The Terraform Provider Cyberark plugin does not support the following features:
+
+The CyberArk Terraform Provider plugin does not support the following features:
+
 - Update safe
 - Delete safe
 - Update account
@@ -322,5 +383,4 @@ The Terraform Provider Cyberark plugin does not support the following features:
 - Delete secret store
 - Update sync policy
 - Delete sync policy
-- Self-Hosted support
 - Rotation of auth token
