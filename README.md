@@ -206,7 +206,8 @@ variable "secret_key" {
 terraform {
     required_providers {
       cyberark = {
-        source  = “registry.terraform.io/cyberark/cyberark"version = "~> 0"
+        source  = "registry.terraform.io/cyberark/cyberark"
+        version = "~> 0"
       }
     }
   }
