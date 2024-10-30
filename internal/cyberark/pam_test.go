@@ -452,17 +452,6 @@ func TestUpdateSafe(t *testing.T) {
 	})
 }
 
-func TestDeleteSafe(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
-		}))
-		defer server.Close()
-
-		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.DeleteSafe(context.Background())
-	})
-}
-
 func TestAddSafeMember(t *testing.T) {
 	testCases := []struct {
 		name  string
@@ -586,5 +575,62 @@ func TestDeleteSafeMember(t *testing.T) {
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.DeleteSafeMember(context.Background())
+	})
+}
+func TestDeleteSafe(t *testing.T) {
+	t.Run("DeleteSafe_Success", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s", safe), req.URL.Path)
+			rw.WriteHeader(http.StatusNoContent)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		err := client.DeleteSafe(context.Background(), safe)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("DeleteSafe_NotFound", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s", "nonexistent_safe"), req.URL.Path)
+			rw.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		err := client.DeleteSafe(context.Background(), "nonexistent_safe")
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to delete safe")
+	})
+
+	t.Run("DeleteSafe_InternalServerError", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s", safe), req.URL.Path)
+			rw.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		err := client.DeleteSafe(context.Background(), safe)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to delete safe")
+	})
+
+	t.Run("DeleteSafe_RequestError", func(t *testing.T) {
+		// Using an invalid URL to simulate a request error
+		client := cyberark.NewPAMAPI("http://invalid_url", token, true)
+
+		err := client.DeleteSafe(context.Background(), safe)
+
+		assert.Error(t, err)
 	})
 }

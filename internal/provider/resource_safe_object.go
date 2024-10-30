@@ -239,7 +239,22 @@ func (r *safeResource) Update(_ context.Context, _ resource.UpdateRequest, resp 
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *safeResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError("Delete is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *safeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data safeResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Call the API to delete the safe
+	err := r.api.PamAPI.DeleteSafe(ctx, data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting Safe", fmt.Sprintf("Error deleting Safe: (%+v)", err))
+		return
+	}
+
+	// Remove the resource from the state
+	resp.State.RemoveResource(ctx)
 }

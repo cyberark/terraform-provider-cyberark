@@ -25,7 +25,7 @@ type Safe interface {
 	AddSafe(ctx context.Context, safe SafeData) (*SafeData, error)
 	GetSafe(ctx context.Context, safeID string) (*SafeData, error)
 	UpdateSafe(ctx context.Context)
-	DeleteSafe(ctx context.Context)
+	DeleteSafe(ctx context.Context, safeID string) error
 }
 
 // SafeMember is an interface for interacting with SecretsHub's safe members.
@@ -236,7 +236,25 @@ func (a *pamAPI) UpdateSafe(_ context.Context) {
 }
 
 // DeleteSafe deletes a safe from the SecretsHub.
-func (a *pamAPI) DeleteSafe(_ context.Context) {
+func (a *pamAPI) DeleteSafe(ctx context.Context, safeID string) error {
+	response, err := a.client.DoRequest(
+		ctx,
+		"DELETE",
+		fmt.Sprintf("/PasswordVault/API/Safes/%s", safeID),
+		nil,
+		map[string]string{},
+		map[string]string{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 204 {
+		return fmt.Errorf("failed to delete safe. Expected status code 204, got %d", response.StatusCode)
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("Successfully deleted safe [%s]", safeID))
+	return nil
 }
 
 // AddSafeMember adds a new member to a safe in the SecretsHub.
