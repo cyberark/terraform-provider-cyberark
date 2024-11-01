@@ -376,7 +376,6 @@ See [here](examples/) for examples.
 The CyberArk Terraform Provider plugin does not support the following features:
 
 - Update safe
-- Delete safe
 - Update account
 - Delete account
 - Update secret store
