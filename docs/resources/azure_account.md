@@ -64,6 +64,7 @@ resource "cyberark_azure_account" "mskey" {
 - `ms_duration` (String) Duration.
 - `ms_key_desc` (String) Key Description.
 - `ms_pop` (String) Populate if not exist.
+- `secret_name_in_secret_store` (String) Name of the credential object.
 - `sm_manage` (Boolean) Automatic Management of a credential. Optional Value.
 - `sm_manage_reason` (String) If sm_manage is false, provide reason why credential is not managed.
 

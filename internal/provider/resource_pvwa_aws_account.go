@@ -79,6 +79,10 @@ For more information click [here](https://docs.cyberark.com/pam-self-hosted/late
 				Required:    true,
 				Sensitive:   true,
 			},
+			"secret_name_in_secret_store": schema.StringAttribute{
+				Description: "Name of the credential object.",
+				Optional:    true,
+			},
 			"sm_manage": schema.BoolAttribute{
 				Description: "Automatic Management of a credential. Optional Value.",
 				Optional:    true,
@@ -149,6 +153,7 @@ func (r *pvwaAWSAccountResource) Create(ctx context.Context, req resource.Create
 	props.AWSAccount = data.AWSAccount.ValueStringPointer()
 	props.Alias = data.Alias.ValueStringPointer()
 	props.Region = data.Region.ValueStringPointer()
+	props.SecretNameInSecretStore = data.SecretNameInSecretStore.ValueStringPointer()
 
 	newAccount := cybrapi.Credential{
 		Name:       &name,

@@ -56,6 +56,7 @@ resource "cyberark_aws_account" "awskey" {
 
 - `aws_account_region` (String) AWS Region.
 - `aws_alias` (String) AWS Account Alias.
+- `secret_name_in_secret_store` (String) Name of the credential object.
 - `sm_manage` (Boolean) Automatic Management of a credential. Optional Value.
 - `sm_manage_reason` (String) If sm_manage is false, provide reason why credential is not managed.
 

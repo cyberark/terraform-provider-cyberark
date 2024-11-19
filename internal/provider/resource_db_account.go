@@ -104,7 +104,7 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"secret_name_in_secret_store": schema.StringAttribute{
 				Description: "Name of the credential object.",
-				Required:    true,
+				Optional:    true,
 			},
 			"sm_manage": schema.BoolAttribute{
 				Description: "Automatic Management of a credential. Optional Value.",
