@@ -52,7 +52,7 @@ func TestAccAwsAccountResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_kid", os.Getenv("TF_AWS_KEY_ID")),
 					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_account_id", os.Getenv("TF_AWS_ACCOUNT_ID")),
 					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_alias", os.Getenv("TF_AWS_ALIAS")),
-					resource.TestCheckResourceAttr("cyberark_aws_account.test", "aws_account_region", os.Getenv("TF_AWS_ACCOUNT_REGION")),
+					resource.TestCheckResourceAttr("cyberark_aws_account.test", "secret_name_in_secret_store", "aws_testing"),
 					resource.TestCheckResourceAttrSet("cyberark_aws_account.test", "id"),
 					resource.TestCheckResourceAttrSet("cyberark_aws_account.test", "last_updated"),
 				),
@@ -84,8 +84,8 @@ func testAccAWSAccountCreateData() string {
 		aws_kid            = %[4]q
 		aws_account_id     = %[5]q
 		aws_alias          = %[6]q
-		aws_account_region = %[7]q
+		secret_name_in_secret_store = "aws_testing"
 }
 	`, os.Getenv("TF_AWS_NAME"), os.Getenv("TF_AWS_USERNAME"), os.Getenv("TF_AWS_SECRET"),
-		os.Getenv("TF_AWS_KEY_ID"), os.Getenv("TF_AWS_ACCOUNT_ID"), os.Getenv("TF_AWS_ALIAS"), os.Getenv("TF_AWS_ACCOUNT_REGION"))
+		os.Getenv("TF_AWS_KEY_ID"), os.Getenv("TF_AWS_ACCOUNT_ID"), os.Getenv("TF_AWS_ALIAS"))
 }

@@ -25,17 +25,18 @@ variable "secret_key" {
 }
 
 resource "cyberark_aws_account" "awskey" {
-  name               = "user-aws"
-  username           = "user-aws"
-  platform           = "AWS_TF"
-  safe               = "TF_TEST_SAFE"
-  secret             = var.secret_key
-  sm_manage          = false
-  sm_manage_reason   = "No CPM Associated with Safe."
-  aws_kid            = "9876543210"
-  aws_account_id     = "0123456789"
-  aws_alias          = "aws_alias"
-  aws_account_region = "us-east-2"
+  name                        = "user-aws"
+  username                    = "user-aws"
+  platform                    = "AWS_TF"
+  safe                        = "TF_TEST_SAFE"
+  secret                      = var.secret_key
+  secret_name_in_secret_store = "aws_testing"
+  sm_manage                   = false
+  sm_manage_reason            = "No CPM Associated with Safe."
+  aws_kid                     = "9876543210"
+  aws_account_id              = "0123456789"
+  aws_alias                   = "aws_alias"
+  aws_account_region          = "us-east-2"
 }
 ```
 
@@ -56,6 +57,7 @@ resource "cyberark_aws_account" "awskey" {
 
 - `aws_account_region` (String) AWS Region.
 - `aws_alias` (String) AWS Account Alias.
+- `secret_name_in_secret_store` (String) Name of the credential object.
 - `sm_manage` (Boolean) Automatic Management of a credential. Optional Value.
 - `sm_manage_reason` (String) If sm_manage is false, provide reason why credential is not managed.
 

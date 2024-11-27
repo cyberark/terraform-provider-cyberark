@@ -58,6 +58,7 @@ resource "cyberark_azure_account" "msaccountcreation" {
   ms_app_id         = var.ms_app_id 
   ms_app_obj_id     = var.ms_app_obj_id 
   ms_key_id         = var.ms_key_id
+  secret_name_in_secret_store = "azure_testing"
 }
 
 

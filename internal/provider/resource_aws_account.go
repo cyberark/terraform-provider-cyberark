@@ -33,20 +33,21 @@ type awsAccountResource struct {
 
 // awsCredModel describes the resource data model.
 type awsCredModel struct {
-	Name         types.String `tfsdk:"name"`
-	Username     types.String `tfsdk:"username"`
-	Platform     types.String `tfsdk:"platform"`
-	Safe         types.String `tfsdk:"safe"`
-	SecretType   types.String `tfsdk:"secret_type"`
-	Secret       types.String `tfsdk:"secret"`
-	ID           types.String `tfsdk:"id"`
-	LastUpdated  types.String `tfsdk:"last_updated"`
-	Manage       types.Bool   `tfsdk:"sm_manage"`
-	ManageReason types.String `tfsdk:"sm_manage_reason"`
-	AWSKID       types.String `tfsdk:"aws_kid"`
-	AWSAccount   types.String `tfsdk:"aws_account_id"`
-	Alias        types.String `tfsdk:"aws_alias"`
-	Region       types.String `tfsdk:"aws_account_region"`
+	Name                    types.String `tfsdk:"name"`
+	Username                types.String `tfsdk:"username"`
+	Platform                types.String `tfsdk:"platform"`
+	Safe                    types.String `tfsdk:"safe"`
+	SecretType              types.String `tfsdk:"secret_type"`
+	Secret                  types.String `tfsdk:"secret"`
+	ID                      types.String `tfsdk:"id"`
+	LastUpdated             types.String `tfsdk:"last_updated"`
+	Manage                  types.Bool   `tfsdk:"sm_manage"`
+	ManageReason            types.String `tfsdk:"sm_manage_reason"`
+	AWSKID                  types.String `tfsdk:"aws_kid"`
+	AWSAccount              types.String `tfsdk:"aws_account_id"`
+	Alias                   types.String `tfsdk:"aws_alias"`
+	Region                  types.String `tfsdk:"aws_account_region"`
+	SecretNameInSecretStore types.String `tfsdk:"secret_name_in_secret_store"`
 }
 
 // Metadata returns the resource type name.
@@ -96,6 +97,10 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 				Description: "Secret Key of the credential object.",
 				Required:    true,
 				Sensitive:   true,
+			},
+			"secret_name_in_secret_store": schema.StringAttribute{
+				Description: "Name of the credential object.",
+				Optional:    true,
 			},
 			"sm_manage": schema.BoolAttribute{
 				Description: "Automatic Management of a credential. Optional Value.",
@@ -167,6 +172,7 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 	props.AWSAccount = data.AWSAccount.ValueStringPointer()
 	props.Alias = data.Alias.ValueStringPointer()
 	props.Region = data.Region.ValueStringPointer()
+	props.SecretNameInSecretStore = data.SecretNameInSecretStore.ValueStringPointer()
 
 	newAccount := cybrapi.Credential{
 		Name:       &name,

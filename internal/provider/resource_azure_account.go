@@ -33,24 +33,25 @@ type azureAccountResource struct {
 
 // azureCredModel describes the resource data model.
 type azureCredModel struct {
-	Name         types.String `tfsdk:"name"`
-	Address      types.String `tfsdk:"address"`
-	Username     types.String `tfsdk:"username"`
-	Platform     types.String `tfsdk:"platform"`
-	Safe         types.String `tfsdk:"safe"`
-	SecretType   types.String `tfsdk:"secret_type"`
-	Secret       types.String `tfsdk:"secret"`
-	ID           types.String `tfsdk:"id"`
-	LastUpdated  types.String `tfsdk:"last_updated"`
-	Manage       types.Bool   `tfsdk:"sm_manage"`
-	ManageReason types.String `tfsdk:"sm_manage_reason"`
-	MAppID       types.String `tfsdk:"ms_app_id"`
-	MAppObjectID types.String `tfsdk:"ms_app_obj_id"`
-	MKID         types.String `tfsdk:"ms_key_id"`
-	MADID        types.String `tfsdk:"ms_ad_id"`
-	MDur         types.String `tfsdk:"ms_duration"`
-	MPop         types.String `tfsdk:"ms_pop"`
-	MKeyDesc     types.String `tfsdk:"ms_key_desc"`
+	Name                    types.String `tfsdk:"name"`
+	Address                 types.String `tfsdk:"address"`
+	Username                types.String `tfsdk:"username"`
+	Platform                types.String `tfsdk:"platform"`
+	Safe                    types.String `tfsdk:"safe"`
+	SecretType              types.String `tfsdk:"secret_type"`
+	Secret                  types.String `tfsdk:"secret"`
+	ID                      types.String `tfsdk:"id"`
+	LastUpdated             types.String `tfsdk:"last_updated"`
+	Manage                  types.Bool   `tfsdk:"sm_manage"`
+	ManageReason            types.String `tfsdk:"sm_manage_reason"`
+	MAppID                  types.String `tfsdk:"ms_app_id"`
+	MAppObjectID            types.String `tfsdk:"ms_app_obj_id"`
+	MKID                    types.String `tfsdk:"ms_key_id"`
+	MADID                   types.String `tfsdk:"ms_ad_id"`
+	MDur                    types.String `tfsdk:"ms_duration"`
+	MPop                    types.String `tfsdk:"ms_pop"`
+	MKeyDesc                types.String `tfsdk:"ms_key_desc"`
+	SecretNameInSecretStore types.String `tfsdk:"secret_name_in_secret_store"`
 }
 
 // Metadata returns the resource type name.
@@ -106,6 +107,10 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"sm_manage": schema.BoolAttribute{
 				Description: "Automatic Management of a credential. Optional Value.",
+				Optional:    true,
+			},
+			"secret_name_in_secret_store": schema.StringAttribute{
+				Description: "Name of the credential object.",
 				Optional:    true,
 			},
 			"sm_manage_reason": schema.StringAttribute{
@@ -191,6 +196,7 @@ func (r *azureAccountResource) Create(ctx context.Context, req resource.CreateRe
 	props.MDur = data.MDur.ValueStringPointer()
 	props.MPop = data.MPop.ValueStringPointer()
 	props.MKeyDesc = data.MKeyDesc.ValueStringPointer()
+	props.SecretNameInSecretStore = data.SecretNameInSecretStore.ValueStringPointer()
 
 	newAccount := cybrapi.Credential{
 		Name:       &name,

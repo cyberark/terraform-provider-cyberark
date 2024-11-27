@@ -53,6 +53,7 @@ func TestAccAzureAccountResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cyberark_azure_account.test", "ms_app_id", os.Getenv("TF_AZURE_APP_ID")),
 					resource.TestCheckResourceAttr("cyberark_azure_account.test", "ms_app_obj_id", os.Getenv("TF_AZURE_OBJ_ID")),
 					resource.TestCheckResourceAttr("cyberark_azure_account.test", "ms_key_id", os.Getenv("TF_AZURE_KEY_ID")),
+					resource.TestCheckResourceAttr("cyberark_azure_account.test", "secret_name_in_secret_store", "azure_testing"),
 					resource.TestCheckResourceAttrSet("cyberark_azure_account.test", "id"),
 					resource.TestCheckResourceAttrSet("cyberark_azure_account.test", "last_updated"),
 				),
@@ -85,6 +86,7 @@ func testAccAzureAccountCreateData() string {
 		ms_app_id        = %[4]q
 		ms_app_obj_id    = %[5]q
 		ms_key_id        = %[6]q
+		secret_name_in_secret_store = "azure_testing"
 		    
 }
 	`, os.Getenv("TF_AZURE_NAME"), os.Getenv("TF_AZURE_USERNAME"), os.Getenv("TF_AZURE_SECRET"),

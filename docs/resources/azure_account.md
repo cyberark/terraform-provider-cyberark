@@ -25,21 +25,22 @@ variable "secret_key" {
 }
 
 resource "cyberark_azure_account" "mskey" {
-  name             = "user-ms"
-  address          = "1.2.3.4"
-  username         = "user-ms"
-  platform         = "MS_TF"
-  safe             = "TF_TEST_SAFE"
-  secret           = var.secret_key
-  sm_manage        = false
-  sm_manage_reason = "No CPM Associated with Safe."
-  ms_app_id        = "Application ID"
-  ms_app_obj_id    = "Application Object ID"
-  ms_key_id        = "Key ID"
-  ms_ad_id         = "AD Key ID"
-  ms_duration      = "300"
-  ms_pop           = "yes"
-  ms_key_desc      = "key descriptiong with spaces"
+  name                        = "user-ms"
+  address                     = "1.2.3.4"
+  username                    = "user-ms"
+  platform                    = "MS_TF"
+  safe                        = "TF_TEST_SAFE"
+  secret                      = var.secret_key
+  secret_name_in_secret_store = "azure_testing"
+  sm_manage                   = false
+  sm_manage_reason            = "No CPM Associated with Safe."
+  ms_app_id                   = "Application ID"
+  ms_app_obj_id               = "Application Object ID"
+  ms_key_id                   = "Key ID"
+  ms_ad_id                    = "AD Key ID"
+  ms_duration                 = "300"
+  ms_pop                      = "yes"
+  ms_key_desc                 = "key descriptiong with spaces"
 }
 ```
 
@@ -64,6 +65,7 @@ resource "cyberark_azure_account" "mskey" {
 - `ms_duration` (String) Duration.
 - `ms_key_desc` (String) Key Description.
 - `ms_pop` (String) Populate if not exist.
+- `secret_name_in_secret_store` (String) Name of the credential object.
 - `sm_manage` (Boolean) Automatic Management of a credential. Optional Value.
 - `sm_manage_reason` (String) If sm_manage is false, provide reason why credential is not managed.
 

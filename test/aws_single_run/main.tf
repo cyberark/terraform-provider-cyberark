@@ -78,7 +78,7 @@ resource "cyberark_aws_account" "awsaccountcreation" {
   aws_kid           = var.aws_key_id
   aws_account_id     = var.aws_account_id
   aws_alias         = var.aws_alias
-  aws_account_region = var.aws_region
+  secret_name_in_secret_store = "aws_testing"
   depends_on = [time_sleep.wait_5_seconds]
 }
 
