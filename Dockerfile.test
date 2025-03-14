@@ -1,7 +1,7 @@
 
 FROM hashicorp/terraform AS terraform
 
-FROM golang:1.22-alpine
+FROM golang:1.23-alpine
 
 # Copy Terraform binary from the terraform stage
 COPY --from=terraform /bin/terraform /usr/local/bin/terraform

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-03-17
+
+### Added
+- Removed Secretstore scan after AWS/Azure Secretstore creation to avoid conflicts
+- Upgraded Go to 1.23 to resolve gocovmerge dependency issues 
+
 ## [0.2.2] - 2024-11-22
 
 ### Added

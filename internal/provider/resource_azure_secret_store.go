@@ -216,19 +216,6 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 	}
 	appClientSecret = ""
 
-	scanInputBody := cybrapi.TriggerScanInputBody{
-		Scope: cybrapi.ScanScope{
-			Scan: []string{output.ID},
-		},
-	}
-
-	_, err = r.api.SecretsHubAPI.ScanDefinition(ctx, scanInputBody)
-	if err != nil {
-		resp.Diagnostics.AddError("Error triggering scan",
-			fmt.Sprintf("Error while triggering scan: %+v", err))
-		return
-	}
-
 	tflog.Info(ctx, "Secret Store created successfully")
 
 	data.ID = types.StringValue(output.ID)
