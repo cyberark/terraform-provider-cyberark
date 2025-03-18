@@ -10,6 +10,7 @@ import (
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -17,8 +18,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &safeResource{}
-	_ resource.ResourceWithConfigure = &safeResource{}
+	_ resource.Resource                = &safeResource{}
+	_ resource.ResourceWithConfigure   = &safeResource{}
+	_ resource.ResourceWithImportState = &safeResource{}
 )
 
 // NewSafeResource is a helper function to simplify the provider implementation.
@@ -126,7 +128,7 @@ func (r *safeResource) Configure(_ context.Context, req resource.ConfigureReques
 	api, ok := req.ProviderData.(*cybrapi.API)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected CreateAzureAkvData Source Configure Type",
+			"Unexpected AzureAkvData Source Configure Type",
 			fmt.Sprintf("Expected *cybrapi.Api, got: %T. Please report this issue to the provider developers", req.ProviderData),
 		)
 		return
@@ -145,11 +147,7 @@ func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	safeName := data.Name.ValueString()
-	member := data.SeedMember.ValueString()
-	memberType := data.SeedMType.ValueString()
-	permissionLevel := data.PermType.ValueString()
-	switch permissionLevel {
+	switch data.PermType.ValueString() {
 	case "full", "read", "approver", "manager":
 		// valid options
 	default:
@@ -157,24 +155,22 @@ func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, r
 			fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
 		return
 	}
-	// Required attributes met
+
 	newSafe := cybrapi.SafeData{
-		Name:      &safeName,
-		Owner:     &member,
-		OwnerType: &memberType,
-		Level:     &permissionLevel,
+		RetentionDays:     data.RetentionDays.ValueInt64Pointer(),
+		RetentionVersions: data.RetentionVersions.ValueInt64Pointer(),
+		PurgeEnabled:      data.PurgeEnabled.ValueBoolPointer(),
+		CPM:               data.CPM.ValueStringPointer(),
+		Name:              data.Name.ValueStringPointer(),
+		Description:       data.Description.ValueStringPointer(),
+		Location:          data.Location.ValueStringPointer(),
+		Owner:             data.SeedMember.ValueStringPointer(),
+		OwnerType:         data.SeedMType.ValueStringPointer(),
+		Level:             data.PermType.ValueStringPointer(),
 	}
 
-	// Processing optionals
-	newSafe.Description = data.Description.ValueStringPointer()
-	newSafe.Location = data.Location.ValueStringPointer()
-	newSafe.CPM = data.CPM.ValueStringPointer()
-	newSafe.PurgeEnabled = data.PurgeEnabled.ValueBoolPointer()
-	newSafe.RetentionDays = data.RetentionDays.ValueInt64Pointer()
-	newSafe.RetentionVersions = data.RetentionVersions.ValueInt64Pointer()
-
 	// Check if there is an existing Safe
-	safe, err := r.api.PamAPI.GetSafe(ctx, safeName)
+	safe, err := r.api.PamAPI.GetSafe(ctx, data.Name.ValueString())
 	if err != nil {
 		tflog.Info(ctx, "Safe not found, creating new")
 		safe, err = r.api.PamAPI.AddSafe(ctx, newSafe)
@@ -192,6 +188,7 @@ func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	data.ID = types.StringPointerValue(safe.URLID)
 	data.IDNUM = types.Int64PointerValue(safe.NUMBER)
+
 	// Set last updated time to last refreshed time
 	if safe.LastModificationTime != nil {
 		newTime := time.UnixMicro(*safe.LastModificationTime)
@@ -220,6 +217,21 @@ func (r *safeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
+	data = safeResourceModel{
+		ID:                types.StringPointerValue(safe.URLID),
+		IDNUM:             types.Int64PointerValue(safe.NUMBER),
+		RetentionDays:     types.Int64PointerValue(safe.RetentionDays),
+		RetentionVersions: types.Int64PointerValue(safe.RetentionVersions),
+		PurgeEnabled:      types.BoolPointerValue(safe.PurgeEnabled),
+		CPM:               data.CPM,
+		Name:              types.StringPointerValue(safe.Name),
+		Description:       types.StringPointerValue(safe.Description),
+		Location:          data.Location,
+		SeedMember:        data.SeedMember,
+		SeedMType:         data.SeedMType,
+		PermType:          data.PermType,
+	}
+
 	// Set last updated time to last refreshed time
 	if safe.LastModificationTime != nil {
 		newTime := time.UnixMicro(*safe.LastModificationTime)
@@ -233,13 +245,104 @@ func (r *safeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *safeResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Update is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data, state safeResourceModel
+
+	// Read Terraform plan data and current state into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate permission level
+	switch data.PermType.ValueString() {
+	case "full", "read", "approver", "manager":
+		// valid options
+	default:
+		resp.Diagnostics.AddError("Permission Level Error",
+			fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
+		return
+	}
+
+	updatedSafe := cybrapi.SafeData{
+		RetentionDays:     data.RetentionDays.ValueInt64Pointer(),
+		RetentionVersions: data.RetentionVersions.ValueInt64Pointer(),
+		PurgeEnabled:      data.PurgeEnabled.ValueBoolPointer(),
+		CPM:               data.CPM.ValueStringPointer(),
+		Name:              data.Name.ValueStringPointer(),
+		Description:       data.Description.ValueStringPointer(),
+		Location:          data.Location.ValueStringPointer(),
+		URLID:             data.ID.ValueStringPointer(),
+		NUMBER:            data.IDNUM.ValueInt64Pointer(),
+		Owner:             data.SeedMember.ValueStringPointer(),
+		OwnerType:         data.SeedMType.ValueStringPointer(),
+		Level:             data.PermType.ValueStringPointer(),
+	}
+
+	// Call API to update the safe
+	safe, err := r.api.PamAPI.UpdateSafe(ctx, state.ID.ValueString(), updatedSafe)
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating Safe",
+			fmt.Sprintf("Error while updating Safe: %+v", err))
+		return
+	}
+
+	err = r.api.PamAPI.UpdateSafeMember(ctx, updatedSafe)
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating Safe Member",
+			fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
+		return
+	}
+
+	// Update ID fields in case they changed
+	data.ID = types.StringPointerValue(safe.URLID)
+	data.IDNUM = types.Int64PointerValue(safe.NUMBER)
+
+	// Update last updated time
+	if safe.LastModificationTime != nil {
+		newTime := time.UnixMicro(*safe.LastModificationTime)
+		data.LastUpdated = types.StringValue(newTime.Format(time.RFC3339))
+	} else {
+		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
+	}
+
+	tflog.Info(ctx, "Safe and Safe Member updated successfully")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *safeResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError("Delete is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *safeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data safeResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// First delete the safe member
+	err := r.api.PamAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting Safe Member",
+			fmt.Sprintf("Error while deleting Safe Member: %+v", err))
+		// Continue with safe deletion even if member deletion fails
+	} else {
+		tflog.Info(ctx, "Safe Member deleted successfully")
+	}
+
+	// Then delete the safe
+	err = r.api.PamAPI.DeleteSafe(ctx, data.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting Safe",
+			fmt.Sprintf("Error while deleting Safe: %+v", err))
+		return
+	}
+
+	tflog.Info(ctx, "Safe deleted successfully")
+}
+
+func (r *safeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

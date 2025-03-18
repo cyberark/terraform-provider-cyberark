@@ -46,7 +46,6 @@ main() {
   # Iterate over policies JSON array
   echo "$policies" | jq -c '.[]' | while read -r policy; do
     policy_id=$(echo "$policy" | jq -r '.id')
-    echo "Deleting policy: $policy_id"
     deletePolicy "$INFRAPOOL_SHARED_SERVICES_DOMAIN" "$token" "$policy_id"
   done
 

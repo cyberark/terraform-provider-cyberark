@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,8 +17,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &azureSecretStoreResource{}
-	_ resource.ResourceWithConfigure = &azureSecretStoreResource{}
+	_ resource.Resource                = &azureSecretStoreResource{}
+	_ resource.ResourceWithConfigure   = &azureSecretStoreResource{}
+	_ resource.ResourceWithImportState = &azureSecretStoreResource{}
 )
 
 // NewAzureSecretStoreResource is a helper function to simplify the provider implementation.
@@ -133,7 +135,7 @@ func (r *azureSecretStoreResource) Configure(_ context.Context, req resource.Con
 	api, ok := req.ProviderData.(*cybrapi.API)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected CreateAzureAkvData Source Configure Type",
+			"Unexpected AzureAkvData Source Configure Type",
 			fmt.Sprintf("Expected *cybrapi.Api, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -153,36 +155,22 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	name := data.Name.ValueString()
-
-	description := data.Description.ValueString()
-	storeType := data.Type.ValueString()
-	appClientDirectoryID := data.AppClientDirectoryID.ValueString()
-	azureVaultURL := data.AzureVaultURL.ValueString()
-	appClientID := data.AppClientID.ValueString()
-	appClientSecret := data.AppClientSecret.ValueString()
-
-	connectionType := data.ConnectionType.ValueString()
-	connectorID := data.ConnectorID.ValueString()
-	subscriptionID := data.SubscriptionID.ValueString()
-	subscriptionName := data.SubscriptionName.ValueString()
-	resourceGroupName := data.ResourceGroupName.ValueString()
-	newAccount := cybrapi.SecretStoreInput[cybrapi.CreateAzureAkvData]{
-		Name:        &name,
-		Description: &description,
-		Type:        &storeType,
-		Data: &cybrapi.CreateAzureAkvData{
-			AppClientDirectoryID: &appClientDirectoryID,
-			AzureVaultURL:        &azureVaultURL,
-			AppClientID:          &appClientID,
-			AppClientSecret:      &appClientSecret,
+	newStore := cybrapi.SecretStoreInput[cybrapi.AzureAkvData]{
+		Name:        data.Name.ValueStringPointer(),
+		Description: data.Description.ValueStringPointer(),
+		Type:        data.Type.ValueStringPointer(),
+		Data: &cybrapi.AzureAkvData{
+			AppClientDirectoryID: data.AppClientDirectoryID.ValueStringPointer(),
+			AzureVaultURL:        data.AzureVaultURL.ValueStringPointer(),
+			AppClientID:          data.AppClientID.ValueStringPointer(),
+			AppClientSecret:      data.AppClientSecret.ValueStringPointer(),
 			Connector: &cybrapi.Connector{
-				ConnectionType: &connectionType,
-				ConnectorID:    &connectorID,
+				ConnectionType: data.ConnectionType.ValueStringPointer(),
+				ConnectorID:    data.ConnectorID.ValueStringPointer(),
 			},
-			SubscriptionID:    &subscriptionID,
-			SubscriptionName:  &subscriptionName,
-			ResourceGroupName: &resourceGroupName,
+			SubscriptionID:    data.SubscriptionID.ValueStringPointer(),
+			SubscriptionName:  data.SubscriptionName.ValueStringPointer(),
+			ResourceGroupName: data.ResourceGroupName.ValueStringPointer(),
 		},
 	}
 
@@ -190,13 +178,12 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading secret stores",
 			fmt.Sprintf("Error while reading secret stores: %+v", err))
-		appClientSecret = ""
 		return
 	}
 
 	for _, store := range stores.SecretStores {
-		if *store.Name == name && *store.Data.AppClientID == appClientID {
-			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and account ID %s already exists", name, appClientID))
+		if *store.Name == data.Name.ValueString() && *store.Data.AppClientID == data.AppClientID.ValueString() {
+			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and account ID %s already exists", data.Name.ValueString(), data.AppClientID.ValueString()))
 
 			// We assume that secret store is already created
 			data.ID = types.StringValue(store.ID)
@@ -207,14 +194,12 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 		}
 	}
 
-	output, err := r.api.SecretsHubAPI.AddAzureAkvSecretStore(ctx, newAccount)
+	output, err := r.api.SecretsHubAPI.AddAzureAkvSecretStore(ctx, newStore)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating secret store",
 			fmt.Sprintf("Error while creating secret store: %+v", err))
-		appClientSecret = ""
 		return
 	}
-	appClientSecret = ""
 
 	tflog.Info(ctx, "Secret Store created successfully")
 
@@ -242,26 +227,91 @@ func (r *azureSecretStoreResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	data.AppClientDirectoryID = types.StringPointerValue(output.Data.AppClientDirectoryID)
-	data.AppClientID = types.StringPointerValue(output.Data.AppClientID)
-	data.AppClientSecret = types.StringPointerValue(output.Data.AppClientSecret)
-	data.SubscriptionID = types.StringPointerValue(output.Data.SubscriptionID)
-	data.SubscriptionName = types.StringPointerValue(output.Data.SubscriptionName)
-	data.ResourceGroupName = types.StringPointerValue(output.Data.ResourceGroupName)
-	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
+	data = azureSecretStoreModel{
+		Name:                 types.StringPointerValue(output.Name),
+		Description:          types.StringPointerValue(output.Description),
+		Type:                 types.StringPointerValue(output.Type),
+		AppClientDirectoryID: types.StringPointerValue(output.Data.AppClientDirectoryID),
+		AzureVaultURL:        types.StringPointerValue(output.Data.AzureVaultURL),
+		AppClientID:          types.StringPointerValue(output.Data.AppClientID),
+		AppClientSecret:      types.StringPointerValue(output.Data.AppClientSecret),
+		ConnectionType:       types.StringPointerValue(output.Data.Connector.ConnectionType),
+		ConnectorID:          types.StringPointerValue(output.Data.Connector.ConnectorID),
+		SubscriptionID:       types.StringPointerValue(output.Data.SubscriptionID),
+		SubscriptionName:     types.StringPointerValue(output.Data.SubscriptionName),
+		ResourceGroupName:    types.StringPointerValue(output.Data.ResourceGroupName),
+		ID:                   types.StringValue(output.ID),
+		LastUpdated:          types.StringPointerValue(output.UpdatedAt),
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *azureSecretStoreResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Update is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *azureSecretStoreResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data, state azureSecretStoreModel
+
+	// Read Terraform plan data and current state into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updatedStore := cybrapi.SecretStoreInput[cybrapi.AzureAkvData]{
+		Name:        data.Name.ValueStringPointer(),
+		Description: data.Description.ValueStringPointer(),
+		Data: &cybrapi.AzureAkvData{
+			AppClientDirectoryID: data.AppClientDirectoryID.ValueStringPointer(),
+			AzureVaultURL:        data.AzureVaultURL.ValueStringPointer(),
+			AppClientID:          data.AppClientID.ValueStringPointer(),
+			AppClientSecret:      data.AppClientSecret.ValueStringPointer(),
+			Connector: &cybrapi.Connector{
+				ConnectionType: data.ConnectionType.ValueStringPointer(),
+				ConnectorID:    data.ConnectorID.ValueStringPointer(),
+			},
+			SubscriptionID:    data.SubscriptionID.ValueStringPointer(),
+			SubscriptionName:  data.SubscriptionName.ValueStringPointer(),
+			ResourceGroupName: data.ResourceGroupName.ValueStringPointer(),
+		},
+	}
+
+	output, err := r.api.SecretsHubAPI.UpdateAzureAkvSecretStore(ctx, state.ID.ValueString(), updatedStore)
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating secret store",
+			fmt.Sprintf("Error while updating secret store: %+v", err))
+		return
+	}
+
+	data.ID = types.StringValue(output.ID)
+	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
+
+	tflog.Info(ctx, "Azure Secret Store updated successfully")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *azureSecretStoreResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError("Delete is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *azureSecretStoreResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state azureSecretStoreModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := r.api.SecretsHubAPI.DeleteAzureAkvSecretStore(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting Azure secret store",
+			fmt.Sprintf("Error while deleting secret store: %+v", err))
+		return
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("Azure Secret Store %s deleted successfully", state.ID.ValueString()))
+}
+
+func (r *azureSecretStoreResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -10,6 +10,7 @@ import (
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -17,8 +18,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &syncPolicyResource{}
-	_ resource.ResourceWithConfigure = &syncPolicyResource{}
+	_ resource.Resource                = &syncPolicyResource{}
+	_ resource.ResourceWithConfigure   = &syncPolicyResource{}
+	_ resource.ResourceWithImportState = &syncPolicyResource{}
 )
 
 // NewSyncPolicyResource is a helper function to simplify the provider implementation.
@@ -107,7 +109,7 @@ func (r *syncPolicyResource) Configure(_ context.Context, req resource.Configure
 	api, ok := req.ProviderData.(*cybrapi.API)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected CreateAzureAkvData Source Configure Type",
+			"Unexpected AzureAkvData Source Configure Type",
 			fmt.Sprintf("Expected *cybrapi.Api, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
@@ -126,32 +128,23 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	name := data.Name.ValueString()
-	sourceID := data.SourceID.ValueString()
-	targetID := data.TargetID.ValueString()
-	safeType := data.Type.ValueString()
-	safeName := data.SafeName.ValueString()
 	newPolicy := cybrapi.PolicyInput{
-		Name: &name,
-	}
-
-	// Setting Optional values
-	newPolicy.Transformation = transformationValue(data.Transformation)
-	newPolicy.Description = data.Description.ValueStringPointer()
-
-	filterDetails := cybrapi.Filter{
-		Type: &safeType,
-		Data: &cybrapi.SafeDataFilter{
-			SafeName: &safeName,
+		Name:        data.Name.ValueStringPointer(),
+		Description: data.Description.ValueStringPointer(),
+		Source: &cybrapi.Source{
+			SourceID: data.SourceID.ValueString(),
 		},
+		Target: &cybrapi.Target{
+			TargetID: data.TargetID.ValueString(),
+		},
+		Filter: &cybrapi.Filter{
+			Type: data.Type.ValueStringPointer(),
+			Data: &cybrapi.SafeDataFilter{
+				SafeName: data.SafeName.ValueStringPointer(),
+			},
+		},
+		Transformation: transformationValue(data.Transformation),
 	}
-	newPolicy.Source = &cybrapi.Source{
-		SourceID: sourceID,
-	}
-	newPolicy.Target = &cybrapi.Target{
-		TargetID: targetID,
-	}
-	newPolicy.Filter = &filterDetails
 
 	policies, err := r.api.SecretsHubAPI.GetSyncPolicies(ctx)
 	if err != nil {
@@ -162,7 +155,7 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 	var policy *cybrapi.PolicyExternalOutput
 
 	for _, p := range policies.Policies {
-		if *p.Name == name {
+		if *p.Name == data.Name.ValueString() {
 			policy = p
 			break
 		}
@@ -209,21 +202,55 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	data.ID = types.StringPointerValue(policy.ID)
-	data.LastUpdated = types.StringPointerValue(policy.UpdatedAt)
+	store, err := r.api.SecretsHubAPI.GetSecretFilter(ctx, policy.Source.SourceID, *policy.Filter.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to read store ", fmt.Sprintf("Failed to read store: %+v", err))
+		return
+	}
+
+	data = syncPolicyModel{
+		Name:        types.StringPointerValue(policy.Name),
+		Description: types.StringPointerValue(policy.Description),
+		SourceID:    types.StringValue(policy.Source.SourceID),
+		TargetID:    types.StringValue(policy.Target.TargetID),
+		Type:        types.StringPointerValue(store.Type),
+		SafeName:    types.StringPointerValue(store.Data.SafeName),
+		ID:          types.StringPointerValue(policy.ID),
+		LastUpdated: types.StringPointerValue(policy.UpdatedAt),
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-// Update is not supported
-func (r *syncPolicyResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Update is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+// Update is not supported for this resource.
+func (r *syncPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError("SecretsHub API does not support Update operation for Sync Policies",
+		"Please delete the resource and create a new one.")
 }
 
-// Delete is not supported
-func (r *syncPolicyResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError("Delete is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+// Delete removes the resource and deletes the Terraform state on success.
+func (r *syncPolicyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state syncPolicyModel
+
+	// Read Terraform state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Call the API to delete the policy
+	err := r.api.SecretsHubAPI.DeleteSyncPolicy(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to delete sync policy",
+			fmt.Sprintf("Failed to delete sync policy: %+v", err))
+		return
+	}
+
+	tflog.Info(ctx, "Sync Policy deleted successfully")
+}
+
+func (r *syncPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

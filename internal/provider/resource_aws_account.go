@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -17,8 +18,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &awsAccountResource{}
-	_ resource.ResourceWithConfigure = &awsAccountResource{}
+	_ resource.Resource                = &awsAccountResource{}
+	_ resource.ResourceWithConfigure   = &awsAccountResource{}
+	_ resource.ResourceWithImportState = &awsAccountResource{}
 )
 
 // NewAWSAccountResource is a helper function to simplify the provider implementation.
@@ -139,7 +141,7 @@ func (r *awsAccountResource) Configure(_ context.Context, req resource.Configure
 	api, ok := req.ProviderData.(*cybrapi.API)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected CreateAzureAkvData Source Configure Type",
+			"Unexpected AzureAkvData Source Configure Type",
 			fmt.Sprintf("Expected *cybrapi.Api, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -152,55 +154,47 @@ func (r *awsAccountResource) Configure(_ context.Context, req resource.Configure
 // Create a new resource.
 func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data awsCredModel
-	var props cybrapi.AccountProps
-	var smProps cybrapi.SecretManagement
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	name := data.Name.ValueString()
-	username := data.Username.ValueString()
-	platform := data.Platform.ValueString()
-	safe := data.Safe.ValueString()
-	secretType := data.SecretType.ValueString()
-	secret := data.Secret.ValueString()
-	smProps.AutomaticManagement = data.Manage.ValueBoolPointer()
-	smProps.ManualManagementReason = data.ManageReason.ValueStringPointer()
-	props.AWSKID = data.AWSKID.ValueStringPointer()
-	props.AWSAccount = data.AWSAccount.ValueStringPointer()
-	props.Alias = data.Alias.ValueStringPointer()
-	props.Region = data.Region.ValueStringPointer()
-	props.SecretNameInSecretStore = data.SecretNameInSecretStore.ValueStringPointer()
-
 	newAccount := cybrapi.Credential{
-		Name:       &name,
-		UserName:   &username,
-		Platform:   &platform,
-		SafeName:   &safe,
-		SecretType: &secretType,
-		Secret:     &secret,
-		Props:      &props,
-		SecretMgmt: &smProps,
+		Name:       data.Name.ValueStringPointer(),
+		UserName:   data.Username.ValueStringPointer(),
+		Platform:   data.Platform.ValueStringPointer(),
+		SafeName:   data.Safe.ValueStringPointer(),
+		SecretType: data.SecretType.ValueStringPointer(),
+		Secret:     data.Secret.ValueStringPointer(),
+		Props: &cybrapi.AccountProps{
+			AWSKID:                  data.AWSKID.ValueStringPointer(),
+			AWSAccount:              data.AWSAccount.ValueStringPointer(),
+			Alias:                   data.Alias.ValueStringPointer(),
+			Region:                  data.Region.ValueStringPointer(),
+			SecretNameInSecretStore: data.SecretNameInSecretStore.ValueStringPointer(),
+		},
+		SecretMgmt: &cybrapi.SecretManagement{
+			AutomaticManagement:    data.Manage.ValueBoolPointer(),
+			ManualManagementReason: data.ManageReason.ValueStringPointer(),
+		},
 	}
 
 	accountSearch, err := r.api.PamAPI.FilterAccounts(
 		ctx,
 		"",
 		[]string{
-			fmt.Sprintf("safeName eq %s", safe),
+			fmt.Sprintf("safeName eq %s", data.Safe.ValueString()),
 		})
 	if err != nil {
 		resp.Diagnostics.AddError("Error searching for account", fmt.Sprintf("Error searching for account: %+v", err))
-		secret = ""
 		return
 	}
 
 	var account *cybrapi.CredentialResponse
 
 	for _, acc := range accountSearch.Accounts {
-		if *acc.Name == name {
+		if *acc.Name == data.Name.ValueString() {
 			account = acc
 			break
 		}
@@ -211,9 +205,11 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 		account, err = r.api.PamAPI.AddAccount(ctx, newAccount)
 		if err != nil {
 			resp.Diagnostics.AddError("Error creating account", fmt.Sprintf("Error creating account: %+v", err))
-			secret = ""
 			return
 		}
+	} else {
+		resp.Diagnostics.AddError("Error creating account", "Account already exist")
+		return
 	}
 
 	data.ID = types.StringPointerValue(account.CredID)
@@ -228,8 +224,6 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-	// Clear sensitive data
-	secret = ""
 }
 
 // Refresh Existing State
@@ -248,18 +242,22 @@ func (r *awsAccountResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	// Main Credentials
-	data.Name = types.StringPointerValue(newState.Name)
-	data.Platform = types.StringPointerValue(newState.Platform)
-	data.Safe = types.StringPointerValue(newState.SafeName)
-	data.Username = types.StringPointerValue(newState.UserName)
-	data.SecretType = types.StringPointerValue(newState.SecretType)
-
-	// AWS Props
-	data.AWSKID = types.StringPointerValue(newState.Props.AWSKID)
-	data.AWSAccount = types.StringPointerValue(newState.Props.AWSAccount)
-	data.Alias = types.StringPointerValue(newState.Props.Alias)
-	data.Region = types.StringPointerValue(newState.Props.Region)
+	data = awsCredModel{
+		Name:                    types.StringPointerValue(newState.Name),
+		Username:                types.StringPointerValue(newState.UserName),
+		Platform:                types.StringPointerValue(newState.Platform),
+		Safe:                    types.StringPointerValue(newState.SafeName),
+		SecretType:              types.StringPointerValue(newState.SecretType),
+		Secret:                  data.Secret,
+		ID:                      types.StringPointerValue(newState.CredID),
+		Manage:                  data.Manage,
+		ManageReason:            data.ManageReason,
+		AWSKID:                  data.AWSKID,
+		AWSAccount:              data.AWSAccount,
+		Alias:                   data.Alias,
+		Region:                  data.Region,
+		SecretNameInSecretStore: data.SecretNameInSecretStore,
+	}
 
 	// Set last updated time to last updated tim in the vault
 	if newState.SecretMgmt != nil && newState.SecretMgmt.ModifiedTime != nil {
@@ -269,21 +267,84 @@ func (r *awsAccountResource) Read(ctx context.Context, req resource.ReadRequest,
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	// Ensure ID is consistent
-	data.ID = types.StringPointerValue(newState.CredID)
-
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *awsAccountResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Update is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *awsAccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data, state awsCredModel
+
+	// Read Terraform plan data and current state into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updatedAccount := cybrapi.Credential{
+		Name:       data.Name.ValueStringPointer(),
+		UserName:   data.Username.ValueStringPointer(),
+		Platform:   data.Platform.ValueStringPointer(),
+		SafeName:   data.Safe.ValueStringPointer(),
+		SecretType: data.SecretType.ValueStringPointer(),
+		Secret:     data.Secret.ValueStringPointer(),
+		Props: &cybrapi.AccountProps{
+			AWSKID:                  data.AWSKID.ValueStringPointer(),
+			AWSAccount:              data.AWSAccount.ValueStringPointer(),
+			Alias:                   data.Alias.ValueStringPointer(),
+			Region:                  data.Region.ValueStringPointer(),
+			SecretNameInSecretStore: data.SecretNameInSecretStore.ValueStringPointer(),
+		},
+		SecretMgmt: &cybrapi.SecretManagement{
+			AutomaticManagement:    data.Manage.ValueBoolPointer(),
+			ManualManagementReason: data.ManageReason.ValueStringPointer(),
+		},
+	}
+
+	account, err := r.api.PamAPI.UpdateAccount(ctx, state.ID.ValueString(), updatedAccount)
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating account",
+			fmt.Sprintf("Error updating account: %+v", err))
+		return
+	}
+
+	// Update the ID in case it changed
+	data.ID = types.StringPointerValue(account.CredID)
+
+	// Update last updated time
+	if account.SecretMgmt != nil && account.SecretMgmt.ModifiedTime != nil {
+		newTime := time.UnixMicro(*account.SecretMgmt.ModifiedTime)
+		data.LastUpdated = types.StringValue(newTime.Format(time.RFC3339))
+	} else {
+		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
+	}
+
+	tflog.Info(ctx, "AWS Account updated successfully")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *awsAccountResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError("Delete is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *awsAccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data awsCredModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := r.api.PamAPI.DeleteAccount(ctx, data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting account",
+			fmt.Sprintf("Error deleting account: %+v", err))
+		return
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("AWS Account with ID %s deleted successfully", data.ID.ValueString()))
+}
+
+func (r *awsAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
