@@ -66,12 +66,12 @@ function main() {
   rm output/junit.output output/acceptance* output/unit* output/combined-c.out
 
   set +x
-
   #Delete Secretstore and Sync policy
   token=$(generateToken "$TF_TENANT_NAME" "$TF_CLIENT_ID" "$TF_CLIENT_SECRET")
   store_id=$(getStoreID "$TF_DOMAIN_NAME" "$token")
   policy_id=$(fetchPolicyIDFromApi "$TF_DOMAIN_NAME" "$token" "$store_id")
   [ -n "$policy_id" ] && disableAndDeletePolicy "$TF_DOMAIN_NAME" "$token" "$policy_id" || echo "No policies found for deletion"
+  sleep 10
   [ -n "$store_id" ] && deleteSecretStore "$TF_DOMAIN_NAME" "$token" "$store_id" || echo "No SecretStores found for deletion"
 }
 
