@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -eo pipefail
 
 source "$(dirname "$0")/utils.sh"
@@ -49,10 +49,10 @@ function main() {
   )
 
   tests_to_run=(
-  "safe" 
+  "safe"
   "awsaccount"
-  "azureaccount" 
-  "dbaccount" 
+  "azureaccount"
+  "dbaccount"
   "awssecretstore"
   )
 
@@ -81,25 +81,9 @@ function main() {
   sleep 5
   #stop the container
   dockerCompose down
-  #generate_random_values
+
   generate_random_values
   singleRunProviderTest "test/aws_single_run" || overall_status=1
-
-  token=$(generateToken "$TF_VAR_tenant_name" "$TF_VAR_client_id" "$TF_VAR_client_secret")
-
-  # Delete the Sync Policies
-  for dir in "test/syncpolicy" "test/aws_single_run"; do
-    id=$(getPolicyID "$dir")
-    if [ -n "$id" ]; then
-      disableAndDeletePolicy "$TF_VAR_domain" "$token" "$id"
-    fi
-    sleep 10
-  done
-
-  # Delete the SecretStore
-  if [ -n "$TF_VAR_target_secretstore_id" ]; then
-    deleteSecretStore "$TF_VAR_domain" "$token" "$TF_VAR_target_secretstore_id"
-  fi
 
   # Summary of the results
   if [ "$overall_status" -eq 0 ]; then
@@ -159,12 +143,12 @@ function validateTerraformOutputs() {
      terraform output -json")
 
   echo "Received target_dir: $target_dir"
-  
+
   value=$(cat "$target_dir/terraform.tfstate" | jq -r '.outputs.status.value')
   if [[ "$value" == "success" ]]; then
     echo "$target_dir validation was successful"
     return 0
-  else 
+  else
     echo "$target_dir validation was failed"
     return 1
   fi
@@ -188,7 +172,6 @@ function testProviderFeature() {
 
   # Validate outputs
   validateTerraformOutputs "$target_dir"
-  
 }
 
 function singleRunProviderTest() {
@@ -220,7 +203,7 @@ function singleRunProviderTest() {
   if [[ "$value" == "success" ]]; then
     echo "Single run validation was successful: $target_dir"
     return 0
-  else 
+  else
     echo "Single run validation failed: $target_dir"
     return 1
   fi
