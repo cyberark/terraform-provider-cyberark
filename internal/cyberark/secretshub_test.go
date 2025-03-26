@@ -84,10 +84,10 @@ func TestAddAwsAsmSecretStore(t *testing.T) {
 func TestAddAzureAkvSecretStore(t *testing.T) {
 	var (
 		secretStoreName = "test_store"
-		input           = cyberark.SecretStoreInput[cyberark.CreateAzureAkvData]{
+		input           = cyberark.SecretStoreInput[cyberark.AzureAkvData]{
 			Name: &secretStoreName,
 		}
-		body = cyberark.SecretStoreOutput[cyberark.CreateAzureAkvData]{
+		body = cyberark.SecretStoreOutput[cyberark.AzureAkvData]{
 			ID: "test_store_id",
 		}
 	)
@@ -203,9 +203,9 @@ func TestGetAwsAsmSecretStore(t *testing.T) {
 func TestGetAzureAkvSecretStore(t *testing.T) {
 	var (
 		token = []byte("dummy_token")
-		body  = cyberark.SecretStoreOutput[cyberark.CreateAzureAkvData]{
+		body  = cyberark.SecretStoreOutput[cyberark.AzureAkvData]{
 			ID:   "test_store_id",
-			Data: &cyberark.CreateAzureAkvData{},
+			Data: &cyberark.AzureAkvData{},
 		}
 		storeID = "test_store_id"
 	)
@@ -293,8 +293,8 @@ func TestGetAwsAsmSecretStores(t *testing.T) {
 
 func TestGetAzureAkvSecretStores(t *testing.T) {
 	var (
-		body = cyberark.SecretStoresOutput[cyberark.CreateAzureAkvData]{
-			SecretStores: []*cyberark.SecretStoreOutput[cyberark.CreateAzureAkvData]{
+		body = cyberark.SecretStoresOutput[cyberark.AzureAkvData]{
+			SecretStores: []*cyberark.SecretStoreOutput[cyberark.AzureAkvData]{
 				{
 					ID: "test_store_id",
 				},
@@ -333,26 +333,174 @@ func TestGetAzureAkvSecretStores(t *testing.T) {
 }
 
 func TestUpdateSecretStore(t *testing.T) {
-	t.Run("VerifyNoOp", func(t *testing.T) {
+	t.Run("UpdateAwsSecretStore", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+			name    = "updated_aws_store"
+			input   = cyberark.SecretStoreInput[cyberark.AwsAsmData]{
+				Name: &name,
+			}
+			output = cyberark.SecretStoreOutput[cyberark.AwsAsmData]{
+				ID:   storeID,
+				Name: &name,
+			}
+		)
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "PATCH", req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
+			json.NewEncoder(rw).Encode(output)
 		}))
 		defer server.Close()
 
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
-		client.UpdateSecretStore(context.Background())
+		resp, err := client.UpdateAwsSecretStore(context.Background(), storeID, input)
+
+		assert.NoError(t, err)
+		assert.Equal(t, output, *resp)
+	})
+
+	t.Run("UpdateAwsSecretStoreError", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+			name    = "updated_aws_store"
+			input   = cyberark.SecretStoreInput[cyberark.AwsAsmData]{
+				Name: &name,
+			}
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.UpdateAwsSecretStore(context.Background(), storeID, input)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("UpdateAzureAkvSecretStore", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+			name    = "updated_azure_store"
+			input   = cyberark.SecretStoreInput[cyberark.AzureAkvData]{
+				Name: &name,
+			}
+			output = cyberark.SecretStoreOutput[cyberark.AzureAkvData]{
+				ID:   storeID,
+				Name: &name,
+			}
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "PATCH", req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
+			json.NewEncoder(rw).Encode(output)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.UpdateAzureAkvSecretStore(context.Background(), storeID, input)
+
+		assert.NoError(t, err)
+		assert.Equal(t, output, *resp)
+	})
+
+	t.Run("UpdateAzureAkvSecretStoreError", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+			name    = "updated_azure_store"
+			input   = cyberark.SecretStoreInput[cyberark.AzureAkvData]{
+				Name: &name,
+			}
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.UpdateAzureAkvSecretStore(context.Background(), storeID, input)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
 	})
 }
 
 func TestDeleteSecretStore(t *testing.T) {
-	t.Run("VerifyNoOp", func(t *testing.T) {
+	t.Run("DeleteAwsSecretStore", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+		)
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, http.MethodDelete, req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
+			rw.WriteHeader(http.StatusNoContent)
 		}))
 		defer server.Close()
 
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
-		client.DeleteSecretStore(context.Background())
+		err := client.DeleteAwsSecretStore(context.Background(), storeID)
+		assert.NoError(t, err)
+	})
+
+	t.Run("DeleteAwsSecretStoreError", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		err := client.DeleteAwsSecretStore(context.Background(), storeID)
+		assert.Error(t, err)
+	})
+
+	t.Run("DeleteAzureAkvSecretStore", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, http.MethodDelete, req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
+			rw.WriteHeader(http.StatusNoContent)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		err := client.DeleteAzureAkvSecretStore(context.Background(), storeID)
+		assert.NoError(t, err)
+	})
+
+	t.Run("DeleteAzureAkvSecretStoreError", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		err := client.DeleteAzureAkvSecretStore(context.Background(), storeID)
+		assert.Error(t, err)
 	})
 }
 
@@ -541,26 +689,72 @@ func TestGetSyncPolicies(t *testing.T) {
 	})
 }
 
-func TestUpdateSyncPolicy(t *testing.T) {
-	t.Run("VerifyNoOp", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		client.UpdateSyncPolicy(context.Background())
-	})
-}
-
 func TestDeleteSyncPolicy(t *testing.T) {
-	t.Run("VerifyNoOp", func(t *testing.T) {
+	var (
+		policyID = "policy-62d19762-85d0-4cc0-ba44-9e0156a5c9c6"
+	)
+
+	t.Run("DeleteSyncPolicy", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch {
+			case req.Method == http.MethodPut && req.URL.Path == fmt.Sprintf("/api/policies/%s/state", policyID):
+				// Verify the disable request is sent with correct payload
+				var requestBody map[string]string
+				json.NewDecoder(req.Body).Decode(&requestBody)
+				assert.Equal(t, "disable", requestBody["action"])
+				rw.WriteHeader(http.StatusOK)
+			case req.Method == http.MethodDelete && req.URL.Path == fmt.Sprintf("/api/policies/%s", policyID):
+				// Verify the delete request
+				rw.WriteHeader(http.StatusNoContent)
+			default:
+				http.Error(rw, "Unexpected request", http.StatusBadRequest)
+			}
 		}))
 		defer server.Close()
 
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
-		client.DeleteSyncPolicy(context.Background())
+		err := client.DeleteSyncPolicy(context.Background(), policyID)
+		assert.NoError(t, err)
+	})
+
+	t.Run("DisableFailsButDeleteSucceeds", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch {
+			case req.Method == http.MethodPut && req.URL.Path == fmt.Sprintf("/api/policies/%s/state", policyID):
+				// Simulate disable failure
+				http.Error(rw, "Failed to disable", http.StatusInternalServerError)
+			case req.Method == http.MethodDelete && req.URL.Path == fmt.Sprintf("/api/policies/%s", policyID):
+				// Delete still succeeds
+				rw.WriteHeader(http.StatusNoContent)
+			default:
+				http.Error(rw, "Unexpected request", http.StatusBadRequest)
+			}
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		err := client.DeleteSyncPolicy(context.Background(), policyID)
+		assert.NoError(t, err) // Should still succeed as delete worked
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch {
+			case req.Method == http.MethodPut:
+				// Disable succeeds
+				rw.WriteHeader(http.StatusOK)
+			case req.Method == http.MethodDelete:
+				// Delete fails
+				http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+			}
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		err := client.DeleteSyncPolicy(context.Background(), policyID)
+		assert.Error(t, err)
 	})
 }

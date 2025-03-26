@@ -56,6 +56,11 @@ func TestAwsSecretStoreResource(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      "cyberark_aws_secret_store.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: providerConfig + `
 				  removed {
 					from = cyberark_aws_secret_store.test

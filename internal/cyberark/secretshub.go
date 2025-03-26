@@ -13,13 +13,17 @@ import (
 // SecretStore is an interface for interacting with SecretsHub's secret stores.
 type SecretStore interface {
 	AddAwsAsmSecretStore(ctx context.Context, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
-	AddAzureAkvSecretStore(ctx context.Context, body SecretStoreInput[CreateAzureAkvData]) (*SecretStoreOutput[CreateAzureAkvData], error)
+	AddAzureAkvSecretStore(ctx context.Context, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
 	GetAwsAsmSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AwsAsmData], error)
-	GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[CreateAzureAkvData], error)
+	GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AzureAkvData], error)
 	GetAwsAsmSecretStores(ctx context.Context) (*SecretStoresOutput[AwsAsmData], error)
-	GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[CreateAzureAkvData], error)
+	GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error)
 	UpdateSecretStore(ctx context.Context)
+	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
+	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
 	DeleteSecretStore(ctx context.Context)
+	DeleteAwsSecretStore(ctx context.Context, storeID string) error
+	DeleteAzureAkvSecretStore(ctx context.Context, storeID string) error
 }
 
 // ScanSecretStore is an interface for interacting with SecretsHub's secret store scans.
@@ -32,8 +36,8 @@ type SyncPolicy interface {
 	AddSyncPolicy(ctx context.Context, pi PolicyInput) (*PolicyExternalOutput, error)
 	GetSyncPolicy(ctx context.Context, policyID string) (*PolicyExternalOutput, error)
 	GetSyncPolicies(ctx context.Context) (*SyncResponse, error)
-	UpdateSyncPolicy(ctx context.Context)
-	DeleteSyncPolicy(ctx context.Context)
+	GetSecretFilter(ctx context.Context, storeID string, filterID string) (*SecretFilterOutput, error)
+	DeleteSyncPolicy(ctx context.Context, policyID string) error
 }
 
 // SecretsHubAPI is an interface for interacting with the SecretsHub APIs.
@@ -63,8 +67,8 @@ func (a *secretsHubAPI) AddAwsAsmSecretStore(ctx context.Context, body SecretSto
 }
 
 // AddAzureAkvSecretStore adds a new Azure AKS secret store to the SecretsHub.
-func (a *secretsHubAPI) AddAzureAkvSecretStore(ctx context.Context, body SecretStoreInput[CreateAzureAkvData]) (*SecretStoreOutput[CreateAzureAkvData], error) {
-	var output SecretStoreOutput[CreateAzureAkvData]
+func (a *secretsHubAPI) AddAzureAkvSecretStore(ctx context.Context, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error) {
+	var output SecretStoreOutput[AzureAkvData]
 	err := a.addSecretStore(ctx, body, &output)
 	if err != nil {
 		return nil, err
@@ -93,8 +97,7 @@ func (a *secretsHubAPI) addSecretStore(ctx context.Context, body interface{}, ou
 	}
 
 	if response.StatusCode == 409 {
-		tflog.Info(ctx, "Secret Store already exists.")
-		return nil
+		return fmt.Errorf("secret store already exists")
 	} else if response.StatusCode != 201 {
 		return fmt.Errorf("failed to add secret store, expected status code 201, got %d", response.StatusCode)
 	}
@@ -120,8 +123,8 @@ func (a *secretsHubAPI) GetAwsAsmSecretStore(ctx context.Context, storeID string
 }
 
 // GetAzureAkvSecretStore retrieves a secret store from the Azure AKV SecretsHub.
-func (a *secretsHubAPI) GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[CreateAzureAkvData], error) {
-	var output SecretStoreOutput[CreateAzureAkvData]
+func (a *secretsHubAPI) GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AzureAkvData], error) {
+	var output SecretStoreOutput[AzureAkvData]
 	err := a.getSecretStore(ctx, storeID, &output)
 	if err != nil {
 		return nil, err
@@ -166,8 +169,8 @@ func (a *secretsHubAPI) GetAwsAsmSecretStores(ctx context.Context) (*SecretStore
 }
 
 // GetAzureAkvSecretStores retrieves all Azure AKS secret stores from the SecretsHub.
-func (a *secretsHubAPI) GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[CreateAzureAkvData], error) {
-	var output SecretStoresOutput[CreateAzureAkvData]
+func (a *secretsHubAPI) GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error) {
+	var output SecretStoresOutput[AzureAkvData]
 	err := a.getSecretStores(ctx, "AZURE_AKV", &output)
 	if err != nil {
 		return nil, err
@@ -204,11 +207,97 @@ func (a *secretsHubAPI) getSecretStores(ctx context.Context, storeType string, o
 }
 
 // UpdateSecretStore updates a secret store in the SecretsHub.
+func (a *secretsHubAPI) UpdateAwsSecretStore(ctx context.Context, storeId string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error) {
+	var output SecretStoreOutput[AwsAsmData]
+	err := a.updateSecretStore(ctx, storeId, body, &output)
+	if err != nil {
+		return nil, err
+	}
+	return &output, nil
+}
+
+// UpdateAzureAkvSecretStore updates an Azure AKV secret store in the SecretsHub.
+func (a *secretsHubAPI) UpdateAzureAkvSecretStore(ctx context.Context, storeId string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error) {
+	var output SecretStoreOutput[AzureAkvData]
+	err := a.updateSecretStore(ctx, storeId, body, &output)
+	if err != nil {
+		return nil, err
+	}
+	return &output, nil
+}
+
+func (a *secretsHubAPI) updateSecretStore(ctx context.Context, storeId string, body interface{}, output interface{}) error {
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	response, err := a.client.DoRequest(
+		ctx,
+		"PATCH",
+		fmt.Sprintf("/api/secret-stores/%s", storeId),
+		bytes.NewBuffer(bodyBytes),
+		map[string]string{},
+		map[string]string{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 200 {
+		return fmt.Errorf("failed to update secret store, expected status code 200, got %d", response.StatusCode)
+	}
+
+	defer response.Body.Close()
+	decoder := json.NewDecoder(response.Body)
+	if err := decoder.Decode(output); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	return nil
+}
+
+// DeleteSecretStore deletes a secret store from the SecretsHub.
 func (a *secretsHubAPI) UpdateSecretStore(_ context.Context) {
 }
 
 // DeleteSecretStore deletes a secret store from the SecretsHub.
 func (a *secretsHubAPI) DeleteSecretStore(_ context.Context) {
+}
+
+func (a *secretsHubAPI) DeleteAwsSecretStore(ctx context.Context, storeId string) error {
+	err := a.deleteSecretStore(ctx, storeId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteAzureAkvSecretStore deletes an Azure AKV secret store from the SecretsHub.
+func (a *secretsHubAPI) DeleteAzureAkvSecretStore(ctx context.Context, storeId string) error {
+	err := a.deleteSecretStore(ctx, storeId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *secretsHubAPI) deleteSecretStore(ctx context.Context, storeId string) error {
+	response, err := a.client.DoRequest(
+		ctx,
+		"DELETE",
+		fmt.Sprintf("/api/secret-stores/%s", storeId),
+		nil,
+		map[string]string{},
+		map[string]string{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 204 {
+		return fmt.Errorf("failed to delete secret store, expected status code 204, got %d", response.StatusCode)
+	}
+	return nil
 }
 
 // ScanDefinition triggers a scan for a secret store in the SecretsHub.
@@ -345,12 +434,51 @@ func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, err
 	return &output, nil
 }
 
-// UpdateSyncPolicy updates a sync policy in the SecretsHub.
-func (a *secretsHubAPI) UpdateSyncPolicy(_ context.Context) {
-}
-
 // DeleteSyncPolicy deletes a sync policy from the SecretsHub.
-func (a *secretsHubAPI) DeleteSyncPolicy(_ context.Context) {
+func (a *secretsHubAPI) DeleteSyncPolicy(ctx context.Context, policyID string) error {
+	// First disable the policy
+	disableBody, err := json.Marshal(map[string]string{"action": "disable"})
+	if err != nil {
+		return fmt.Errorf("failed to marshal disable policy request: %w", err)
+	}
+
+	disableResponse, err := a.client.DoRequest(
+		ctx,
+		"PUT",
+		fmt.Sprintf("/api/policies/%s/state", policyID),
+		bytes.NewBuffer(disableBody),
+		map[string]string{},
+		map[string]string{},
+	)
+
+	if err != nil {
+		tflog.Warn(ctx, fmt.Sprintf("Failed to disable policy before deletion: %v", err))
+		tflog.Info(ctx, "Attempting to delete the policy anyway...")
+	} else if disableResponse.StatusCode != 200 {
+		tflog.Warn(ctx, fmt.Sprintf("Failed to disable policy, expected status code 200, got %d", disableResponse.StatusCode))
+		tflog.Info(ctx, "Attempting to delete the policy anyway...")
+	} else {
+		tflog.Info(ctx, fmt.Sprintf("Policy with ID %s disabled successfully before deletion", policyID))
+	}
+
+	response, err := a.client.DoRequest(
+		ctx,
+		"DELETE",
+		fmt.Sprintf("/api/policies/%s", policyID),
+		nil,
+		map[string]string{},
+		map[string]string{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 204 {
+		return fmt.Errorf("failed to delete sync policy, expected status code 204, got %d", response.StatusCode)
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("Sync policy with ID %s deleted successfully", policyID))
+	return nil
 }
 
 // NewSecretsHubAPI creates a new SecretsHubAPI client.
@@ -359,4 +487,31 @@ func NewSecretsHubAPI(baseURL string, authToken []byte) SecretsHubAPI {
 		client:    NewClientWithToken(baseURL, true, authToken, true),
 		authToken: authToken,
 	}
+}
+
+func (a *secretsHubAPI) GetSecretFilter(ctx context.Context, storeID string, filterID string) (*SecretFilterOutput, error) {
+	response, err := a.client.DoRequest(
+		ctx,
+		"GET",
+		fmt.Sprintf("/api/secret-stores/%s/filters/%s", storeID, filterID),
+		nil,
+		map[string]string{},
+		map[string]string{},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to get safe name, expected status code 200, got %d", response.StatusCode)
+	}
+
+	output := SecretFilterOutput{}
+	err = json.NewDecoder(response.Body).Decode(&output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &output, nil
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,8 +17,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &awsSecretStoreResource{}
-	_ resource.ResourceWithConfigure = &awsSecretStoreResource{}
+	_ resource.Resource                = &awsSecretStoreResource{}
+	_ resource.ResourceWithConfigure   = &awsSecretStoreResource{}
+	_ resource.ResourceWithImportState = &awsSecretStoreResource{}
 )
 
 // NewAWSSecretStoreResource is a helper function to simplify the provider implementation.
@@ -106,7 +108,7 @@ func (r *awsSecretStoreResource) Configure(_ context.Context, req resource.Confi
 	api, ok := req.ProviderData.(*cybrapi.API)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected CreateAzureAkvData Source Configure Type",
+			"Unexpected AzureAkvData Source Configure Type",
 			fmt.Sprintf("Expected *cybrapi.Api, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
@@ -125,23 +127,15 @@ func (r *awsSecretStoreResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	name := data.Name.ValueString()
-	description := data.Description.ValueString()
-	storeType := data.Type.ValueString()
-	accountAlias := data.AccountAlias.ValueString()
-	accountID := data.AccountID.ValueString()
-	regionID := data.RegionID.ValueString()
-	roleName := data.RoleName.ValueString()
-
-	newAccount := cybrapi.SecretStoreInput[cybrapi.AwsAsmData]{
-		Name:        &name,
-		Description: &description,
-		Type:        &storeType,
+	newStore := cybrapi.SecretStoreInput[cybrapi.AwsAsmData]{
+		Name:        data.Name.ValueStringPointer(),
+		Description: data.Description.ValueStringPointer(),
+		Type:        data.Type.ValueStringPointer(),
 		Data: &cybrapi.AwsAsmData{
-			AccountAlias: &accountAlias,
-			AccountID:    &accountID,
-			RegionID:     &regionID,
-			RoleName:     &roleName,
+			AccountAlias: data.AccountAlias.ValueStringPointer(),
+			AccountID:    data.AccountID.ValueStringPointer(),
+			RegionID:     data.RegionID.ValueStringPointer(),
+			RoleName:     data.RoleName.ValueStringPointer(),
 		},
 	}
 
@@ -153,8 +147,8 @@ func (r *awsSecretStoreResource) Create(ctx context.Context, req resource.Create
 	}
 
 	for _, store := range stores.SecretStores {
-		if *store.Name == name && *store.Data.AccountAlias == accountAlias {
-			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and account alias %s already exists", name, accountAlias))
+		if *store.Name == data.Name.ValueString() && *store.Data.AccountAlias == data.AccountAlias.ValueString() {
+			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and account alias %s already exists", data.Name.ValueString(), data.AccountAlias.ValueString()))
 
 			// We assume that secret store is already created
 			data.ID = types.StringValue(store.ID)
@@ -165,7 +159,7 @@ func (r *awsSecretStoreResource) Create(ctx context.Context, req resource.Create
 		}
 	}
 
-	output, err := r.api.SecretsHubAPI.AddAwsAsmSecretStore(ctx, newAccount)
+	output, err := r.api.SecretsHubAPI.AddAwsAsmSecretStore(ctx, newStore)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating secret store",
 			fmt.Sprintf("Error while creating secret store: %+v", err))
@@ -181,7 +175,7 @@ func (r *awsSecretStoreResource) Create(ctx context.Context, req resource.Create
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-// Read the resource state.
+// Read the resource state. The Read method is used to sync an existing resource with Terraform's state when Terraform is already aware of the resource.
 func (r *awsSecretStoreResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data awsSecretStoreModel
 
@@ -198,23 +192,81 @@ func (r *awsSecretStoreResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	data.AccountAlias = types.StringPointerValue(output.Data.AccountAlias)
-	data.RoleName = types.StringPointerValue(output.Data.RoleName)
-	data.Description = types.StringPointerValue(output.Description)
-	data.Name = types.StringPointerValue(output.Name)
-	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
+	data = awsSecretStoreModel{
+		Name:         types.StringPointerValue(output.Name),
+		Description:  types.StringPointerValue(output.Description),
+		Type:         types.StringPointerValue(output.Type),
+		AccountAlias: types.StringPointerValue(output.Data.AccountAlias),
+		AccountID:    types.StringPointerValue(output.Data.AccountID),
+		RegionID:     types.StringPointerValue(output.Data.RegionID),
+		RoleName:     types.StringPointerValue(output.Data.RoleName),
+		ID:           types.StringValue(output.ID),
+		LastUpdated:  types.StringPointerValue(output.UpdatedAt),
+	}
+
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *awsSecretStoreResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Update is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *awsSecretStoreResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data, state awsSecretStoreModel
+
+	// Read Terraform plan data into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updatedStore := cybrapi.SecretStoreInput[cybrapi.AwsAsmData]{
+		Name:        data.Name.ValueStringPointer(),
+		Description: data.Description.ValueStringPointer(),
+		Type:        data.Type.ValueStringPointer(),
+		Data: &cybrapi.AwsAsmData{
+			AccountAlias: data.AccountAlias.ValueStringPointer(),
+			AccountID:    data.AccountID.ValueStringPointer(),
+			RegionID:     data.RegionID.ValueStringPointer(),
+			RoleName:     data.RoleName.ValueStringPointer(),
+		},
+	}
+
+	output, err := r.api.SecretsHubAPI.UpdateAwsSecretStore(ctx, state.ID.ValueString(), updatedStore)
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating secret store",
+			fmt.Sprintf("Error while updating secret store: %+v", err))
+		return
+	}
+
+	data.ID = types.StringValue(output.ID)
+	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
+
+	tflog.Info(ctx, "AWS Secret Store updated successfully")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *awsSecretStoreResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError("Delete is not supported through terraform",
-		"Please consult with your CyberArk Administrator to process account property updates.")
+func (r *awsSecretStoreResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state awsSecretStoreModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := r.api.SecretsHubAPI.DeleteAwsSecretStore(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting AWS secret store",
+			fmt.Sprintf("Error while deleting secret store: %+v", err))
+		return
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("AWS Secret Store %s deleted successfully", state.ID.ValueString()))
+}
+
+// ImportState imports an existing AWS Secret Store resource into Terraform. It retrieves the resource from CyberArk SecretsHub using the provided ID,
+// sets the Terraform state to match the resource, and handles any errors.
+func (r *awsSecretStoreResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

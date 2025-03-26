@@ -92,21 +92,6 @@ pipeline {
       }
     }
 
-    stage('Ensure preexisting test resources are cleaned up') {
-      steps {
-        withCredentials([
-          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-tenant_username", variable: 'INFRAPOOL_SHARED_SERVICES_TENANT'),
-          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-tenant_address", variable: 'INFRAPOOL_SHARED_SERVICES_DOMAIN'),
-          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_password", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_SECRET'),
-          conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_username", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_ID'),
-        ]){
-          script {
-            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/cleanup-resources.sh'
-          }
-        }
-      }
-    }
-
     stage('Test') {
       steps {
         withCredentials([

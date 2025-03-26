@@ -41,7 +41,7 @@ func TestAddAccount(t *testing.T) {
 				UserName: &name,
 				Name:     &name,
 			}
-			fmt.Println(json.NewEncoder(rw).Encode(resp))
+
 			json.NewEncoder(rw).Encode(resp)
 		}))
 		defer server.Close()
@@ -286,24 +286,120 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	t.Run("UpdateAccount", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "PUT", req.Method)
+			assert.Contains(t, req.URL.Path, credID)
+
+			body, _ := io.ReadAll(req.Body)
+			req.Body.Close()
+			assert.Contains(t, string(body), `"name":"user"`)
+
+			rw.WriteHeader(http.StatusOK)
+			resp := cyberark.CredentialResponse{
+				CredID:   &credID,
+				UserName: &name,
+				Name:     &name,
+			}
+			json.NewEncoder(rw).Encode(resp)
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.UpdateAccount(context.Background())
+
+		credentials := cyberark.Credential{
+			Name: &name,
+		}
+
+		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
+
+		expectedData := cyberark.CredentialResponse{
+			CredID:   &credID,
+			UserName: &name,
+			Name:     &name,
+		}
+		assert.NoError(t, err)
+		assert.Equal(t, expectedData, *resp)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		credentials := cyberark.Credential{
+			Name: &name,
+		}
+
+		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("InvalidJSONResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			rw.Write([]byte(`invalid json`))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		credentials := cyberark.Credential{
+			Name: &name,
+		}
+
+		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
 	})
 }
 
 func TestDeleteAccount(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	t.Run("SuccessfulDeletion", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Accounts/%s", credID), req.URL.Path)
+
+			rw.WriteHeader(http.StatusNoContent) // 204 No Content
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.DeleteAccount(context.Background())
+		err := client.DeleteAccount(context.Background(), credID)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("AccountNotFound", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Accounts/%s", credID), req.URL.Path)
+
+			rw.WriteHeader(http.StatusNotFound) // 404 Not Found
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+		err := client.DeleteAccount(context.Background(), credID)
+
+		assert.Error(t, err) // Should return error for 404 response
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+		err := client.DeleteAccount(context.Background(), credID)
+
+		assert.Error(t, err)
 	})
 }
 
@@ -442,24 +538,105 @@ func TestGetSafe(t *testing.T) {
 }
 
 func TestUpdateSafe(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	t.Run("UpdateSafe", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "PUT", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s", safe), req.URL.Path)
+
+			body, _ := io.ReadAll(req.Body)
+			req.Body.Close()
+			assert.Contains(t, string(body), `"safeName":"user_safe"`)
+
+			rw.WriteHeader(http.StatusOK)
+			resp := cyberark.SafeData{
+				Name:   &safe,
+				URLID:  &safe,
+				NUMBER: &number,
+			}
+			json.NewEncoder(rw).Encode(resp)
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.UpdateSafe(context.Background())
+
+		safeData := cyberark.SafeData{
+			Name: &safe,
+		}
+
+		resp, err := client.UpdateSafe(context.Background(), safe, safeData)
+
+		expectedData := cyberark.SafeData{
+			Name:   &safe,
+			URLID:  &safe,
+			NUMBER: &number,
+		}
+		assert.NoError(t, err)
+		assert.Equal(t, expectedData, *resp)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		safeData := cyberark.SafeData{
+			Name: &safe,
+		}
+
+		resp, err := client.UpdateSafe(context.Background(), safe, safeData)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("InvalidJSONResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			rw.Write([]byte(`invalid json`))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		safeData := cyberark.SafeData{
+			Name: &safe,
+		}
+
+		resp, err := client.UpdateSafe(context.Background(), safe, safeData)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
 	})
 }
 
 func TestDeleteSafe(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	t.Run("SuccessfulDeletion", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s", safe), req.URL.Path)
+
+			rw.WriteHeader(http.StatusNoContent) // 204 No Content
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.DeleteSafe(context.Background())
+		err := client.DeleteSafe(context.Background(), safe)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+		err := client.DeleteSafe(context.Background(), safe)
+
+		assert.Error(t, err)
 	})
 }
 
@@ -557,34 +734,124 @@ func TestAddSafeMember(t *testing.T) {
 }
 
 func TestGetSafeMember(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
+	// Since GetSafeMember is a placeholder function that doesn't do anything,
+	// we'll keep this as a basic verification but add a proper comment
+	t.Run("Placeholder Function", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
 		client.GetSafeMember(context.Background())
+		// No assertions as the function currently does nothing
 	})
 }
 
 func TestUpdateSafeMember(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	name := "TestSafe"
+	owner := "testUser"
+	ownerType := "user"
+
+	// Test different permission levels
+	testCases := []struct {
+		name  string
+		level string
+	}{
+		{"FullAdminPermissions", levelFull},
+		{"ReadOnlyPermissions", levelRead},
+		{"ApproverPermissions", levelApprover},
+		{"ManagerPermissions", levelManager},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, "PUT", req.Method)
+				assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s/Members/%s", name, owner), req.URL.Path)
+
+				rw.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			client := cyberark.NewPAMAPI(server.URL, token, true)
+
+			safe := cyberark.SafeData{
+				Name:      &name,
+				Owner:     &owner,
+				OwnerType: &ownerType,
+				Level:     &tc.level,
+			}
+
+			err := client.UpdateSafeMember(context.Background(), safe)
+
+			assert.NoError(t, err)
+		})
+	}
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.UpdateSafeMember(context.Background())
+
+		safe := cyberark.SafeData{
+			Name:      &name,
+			Owner:     &owner,
+			OwnerType: &ownerType,
+			Level:     &levelManager,
+		}
+
+		err := client.UpdateSafeMember(context.Background(), safe)
+
+		assert.Error(t, err)
 	})
 }
 
 func TestDeleteSafeMember(t *testing.T) {
-	t.Run("Verify NoOp", func(_ *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	safeName := "TestSafe"
+	memberName := "testUser"
+
+	t.Run("SuccessfulDeletion", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s/Members/%s", safeName, memberName), req.URL.Path)
+
+			rw.WriteHeader(http.StatusNoContent) // 204 No Content
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.DeleteSafeMember(context.Background())
+		err := client.DeleteSafeMember(context.Background(), safeName, memberName)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("MemberNotFound", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "DELETE", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s/Members/%s", safeName, memberName), req.URL.Path)
+
+			rw.WriteHeader(http.StatusNotFound) // 404 Not Found
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+		err := client.DeleteSafeMember(context.Background(), safeName, memberName)
+
+		assert.NoError(t, err) // Should return nil for 404 response
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+		err := client.DeleteSafeMember(context.Background(), safeName, memberName)
+
+		assert.Error(t, err)
 	})
 }

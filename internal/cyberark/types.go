@@ -165,8 +165,8 @@ type AwsAsmData struct {
 	RoleName     *string `json:"roleName"`
 }
 
-// CreateAzureAkvData represents the Azure AKV data
-type CreateAzureAkvData struct {
+// AzureAkvData represents the Azure AKV data
+type AzureAkvData struct {
 	AppClientDirectoryID *string    `json:"appClientDirectoryId"`
 	AzureVaultURL        *string    `json:"azureVaultUrl"`
 	AppClientID          *string    `json:"appClientId"`
@@ -184,7 +184,7 @@ type Connector struct {
 }
 
 // SecretStoreInput represents the secret store input
-type SecretStoreInput[T AwsAsmData | CreateAzureAkvData] struct {
+type SecretStoreInput[T AwsAsmData | AzureAkvData] struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Type        *string `json:"type"`
@@ -192,7 +192,7 @@ type SecretStoreInput[T AwsAsmData | CreateAzureAkvData] struct {
 }
 
 // SecretStoreOutput represents the secret store output
-type SecretStoreOutput[T AwsAsmData | CreateAzureAkvData] struct {
+type SecretStoreOutput[T AwsAsmData | AzureAkvData] struct {
 	ID          string    `json:"id"`
 	Type        *string   `json:"type"`
 	Behaviors   []*string `json:"behaviors"`
@@ -206,7 +206,7 @@ type SecretStoreOutput[T AwsAsmData | CreateAzureAkvData] struct {
 }
 
 // SecretStoresOutput represents the generic secret stores output
-type SecretStoresOutput[T AwsAsmData | CreateAzureAkvData] struct {
+type SecretStoresOutput[T AwsAsmData | AzureAkvData] struct {
 	SecretStores []*SecretStoreOutput[T] `json:"secretStores"`
 }
 
@@ -293,4 +293,14 @@ type PolicyExternalOutput struct {
 type SyncResponse struct {
 	Count    int32                   `json:"count"`
 	Policies []*PolicyExternalOutput `json:"policies"`
+}
+
+type SecretFilterOutput struct {
+	ID        *string         `json:"id"`
+	Type      *string         `json:"type"`
+	Data      *SafeDataFilter `json:"data"`
+	CreatedAt *string         `json:"createdAt"`
+	UpdatedAt *string         `json:"updatedAt"`
+	CreatedBy *string         `json:"createdBy"`
+	UpdatedBy *string         `json:"updatedBy"`
 }

@@ -14,8 +14,6 @@ import (
 )
 
 func TestAWSAccountResourceSchema(t *testing.T) {
-	t.Parallel()
-
 	ctx := context.Background()
 	schemaRequest := fwresource.SchemaRequest{}
 	schemaResponse := &fwresource.SchemaResponse{}
@@ -64,7 +62,7 @@ func TestAccAwsAccountResource(t *testing.T) {
 					lifecycle {
 						destroy = false
 					}
-				
+
 				}`,
 			},
 		},

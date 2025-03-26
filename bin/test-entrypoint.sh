@@ -22,8 +22,6 @@ function generate_random_values() {
 }
 
 function main() {
-
-  #generate_random_values
   generate_random_values
 
   export PATH="$(pwd):$PATH"
