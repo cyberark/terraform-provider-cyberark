@@ -94,6 +94,7 @@ func TestReadOnly(t *testing.T) {
 
 func TestApprover(t *testing.T) {
 	userType := "User"
+	// file deepcode ignore NoHardcodedCredentials/test: This is a test file
 	user := "SomeUser"
 	approver := cyberark.Permission{
 		UseAccounts:       true,
