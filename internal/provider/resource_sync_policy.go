@@ -225,8 +225,49 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 
 // Update is not supported for this resource.
 func (r *syncPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("SecretsHub API does not support Update operation for Sync Policies",
-		"Please delete the resource and create a new one.")
+	var data, state syncPolicyModel
+
+	// Read Terraform plan data and current state into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create the new policy configuration
+	updatePolicy := cybrapi.PolicyInput{
+		Name:        data.Name.ValueStringPointer(),
+		Description: data.Description.ValueStringPointer(),
+		Source: &cybrapi.Source{
+			SourceID: data.SourceID.ValueString(),
+		},
+		Target: &cybrapi.Target{
+			TargetID: data.TargetID.ValueString(),
+		},
+		Filter: &cybrapi.Filter{
+			Type: data.Type.ValueStringPointer(),
+			Data: &cybrapi.SafeDataFilter{
+				SafeName: data.SafeName.ValueStringPointer(),
+			},
+		},
+		Transformation: transformationValue(data.Transformation),
+	}
+
+	// Call API to update (delete and recreate) the policy
+	policy, err := r.api.SecretsHubAPI.UpdateSyncPolicy(ctx, state.ID.ValueString(), updatePolicy)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to update sync policy",
+			fmt.Sprintf("Failed to update sync policy: %+v", err))
+		return
+	}
+
+	// Update the state with the new policy information
+	data.ID = types.StringPointerValue(policy.ID)
+	data.LastUpdated = types.StringPointerValue(policy.UpdatedAt)
+
+	tflog.Info(ctx, "Sync Policy updated successfully")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Delete removes the resource and deletes the Terraform state on success.

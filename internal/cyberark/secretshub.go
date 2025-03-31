@@ -36,6 +36,7 @@ type SyncPolicy interface {
 	GetSyncPolicies(ctx context.Context) (*SyncResponse, error)
 	GetSecretFilter(ctx context.Context, storeID string, filterID string) (*SecretFilterOutput, error)
 	DeleteSyncPolicy(ctx context.Context, policyID string) error
+	UpdateSyncPolicy(ctx context.Context, policyID string, pi PolicyInput) (*PolicyExternalOutput, error)
 }
 
 // SecretsHubAPI is an interface for interacting with the SecretsHub APIs.
@@ -410,6 +411,24 @@ func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, err
 	}
 
 	return &output, nil
+}
+
+// UpdateSyncPolicy updates a sync policy by deleting the existing one and creating a new one.
+func (a *secretsHubAPI) UpdateSyncPolicy(ctx context.Context, policyID string, pi PolicyInput) (*PolicyExternalOutput, error) {
+	// First delete the existing policy
+	err := a.DeleteSyncPolicy(ctx, policyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete existing policy during update: %w", err)
+	}
+
+	// Then create a new policy with the updated parameters
+	output, err := a.AddSyncPolicy(ctx, pi)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new policy during update: %w", err)
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("Sync policy with ID %s updated successfully", *output.ID))
+	return output, nil
 }
 
 // DeleteSyncPolicy deletes a sync policy from the SecretsHub.
