@@ -435,7 +435,7 @@ func TestUpdateSecretStore(t *testing.T) {
 }
 
 func TestDeleteSecretStore(t *testing.T) {
-	t.Run("DeleteAwsSecretStore", func(t *testing.T) {
+	t.Run("DeleteSecretStore", func(t *testing.T) {
 		var (
 			storeID = "test-store-id"
 		)
@@ -449,11 +449,11 @@ func TestDeleteSecretStore(t *testing.T) {
 
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
-		err := client.DeleteAwsSecretStore(context.Background(), storeID)
+		err := client.DeleteSecretStore(context.Background(), storeID)
 		assert.NoError(t, err)
 	})
 
-	t.Run("DeleteAwsSecretStoreError", func(t *testing.T) {
+	t.Run("DeleteSecretStoreError", func(t *testing.T) {
 		var (
 			storeID = "test-store-id"
 		)
@@ -465,41 +465,7 @@ func TestDeleteSecretStore(t *testing.T) {
 
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
-		err := client.DeleteAwsSecretStore(context.Background(), storeID)
-		assert.Error(t, err)
-	})
-
-	t.Run("DeleteAzureAkvSecretStore", func(t *testing.T) {
-		var (
-			storeID = "test-store-id"
-		)
-
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, http.MethodDelete, req.Method)
-			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
-			rw.WriteHeader(http.StatusNoContent)
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		err := client.DeleteAzureAkvSecretStore(context.Background(), storeID)
-		assert.NoError(t, err)
-	})
-
-	t.Run("DeleteAzureAkvSecretStoreError", func(t *testing.T) {
-		var (
-			storeID = "test-store-id"
-		)
-
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		err := client.DeleteAzureAkvSecretStore(context.Background(), storeID)
+		err := client.DeleteSecretStore(context.Background(), storeID)
 		assert.Error(t, err)
 	})
 }

@@ -21,9 +21,7 @@ type SecretStore interface {
 	UpdateSecretStore(ctx context.Context)
 	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
-	DeleteSecretStore(ctx context.Context)
-	DeleteAwsSecretStore(ctx context.Context, storeID string) error
-	DeleteAzureAkvSecretStore(ctx context.Context, storeID string) error
+	DeleteSecretStore(ctx context.Context, storeID string) error
 }
 
 // ScanSecretStore is an interface for interacting with SecretsHub's secret store scans.
@@ -38,6 +36,7 @@ type SyncPolicy interface {
 	GetSyncPolicies(ctx context.Context) (*SyncResponse, error)
 	GetSecretFilter(ctx context.Context, storeID string, filterID string) (*SecretFilterOutput, error)
 	DeleteSyncPolicy(ctx context.Context, policyID string) error
+	UpdateSyncPolicy(ctx context.Context, policyID string, pi PolicyInput) (*PolicyExternalOutput, error)
 }
 
 // SecretsHubAPI is an interface for interacting with the SecretsHub APIs.
@@ -261,27 +260,7 @@ func (a *secretsHubAPI) UpdateSecretStore(_ context.Context) {
 }
 
 // DeleteSecretStore deletes a secret store from the SecretsHub.
-func (a *secretsHubAPI) DeleteSecretStore(_ context.Context) {
-}
-
-func (a *secretsHubAPI) DeleteAwsSecretStore(ctx context.Context, storeId string) error {
-	err := a.deleteSecretStore(ctx, storeId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// DeleteAzureAkvSecretStore deletes an Azure AKV secret store from the SecretsHub.
-func (a *secretsHubAPI) DeleteAzureAkvSecretStore(ctx context.Context, storeId string) error {
-	err := a.deleteSecretStore(ctx, storeId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *secretsHubAPI) deleteSecretStore(ctx context.Context, storeId string) error {
+func (a *secretsHubAPI) DeleteSecretStore(ctx context.Context, storeId string) error {
 	response, err := a.client.DoRequest(
 		ctx,
 		"DELETE",
@@ -432,6 +411,24 @@ func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, err
 	}
 
 	return &output, nil
+}
+
+// UpdateSyncPolicy updates a sync policy by deleting the existing one and creating a new one.
+func (a *secretsHubAPI) UpdateSyncPolicy(ctx context.Context, policyID string, pi PolicyInput) (*PolicyExternalOutput, error) {
+	// First delete the existing policy
+	err := a.DeleteSyncPolicy(ctx, policyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete existing policy during update: %w", err)
+	}
+
+	// Then create a new policy with the updated parameters
+	output, err := a.AddSyncPolicy(ctx, pi)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new policy during update: %w", err)
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("Sync policy with ID %s updated successfully", *output.ID))
+	return output, nil
 }
 
 // DeleteSyncPolicy deletes a sync policy from the SecretsHub.

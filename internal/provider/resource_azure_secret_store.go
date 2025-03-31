@@ -302,7 +302,7 @@ func (r *azureSecretStoreResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	err := r.api.SecretsHubAPI.DeleteAzureAkvSecretStore(ctx, state.ID.ValueString())
+	err := r.api.SecretsHubAPI.DeleteSecretStore(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting Azure secret store",
 			fmt.Sprintf("Error while deleting secret store: %+v", err))
