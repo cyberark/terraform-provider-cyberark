@@ -21,9 +21,7 @@ type SecretStore interface {
 	UpdateSecretStore(ctx context.Context)
 	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
-	DeleteSecretStore(ctx context.Context)
-	DeleteAwsSecretStore(ctx context.Context, storeID string) error
-	DeleteAzureAkvSecretStore(ctx context.Context, storeID string) error
+	DeleteSecretStore(ctx context.Context, storeID string) error
 }
 
 // ScanSecretStore is an interface for interacting with SecretsHub's secret store scans.
@@ -261,27 +259,7 @@ func (a *secretsHubAPI) UpdateSecretStore(_ context.Context) {
 }
 
 // DeleteSecretStore deletes a secret store from the SecretsHub.
-func (a *secretsHubAPI) DeleteSecretStore(_ context.Context) {
-}
-
-func (a *secretsHubAPI) DeleteAwsSecretStore(ctx context.Context, storeId string) error {
-	err := a.deleteSecretStore(ctx, storeId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// DeleteAzureAkvSecretStore deletes an Azure AKV secret store from the SecretsHub.
-func (a *secretsHubAPI) DeleteAzureAkvSecretStore(ctx context.Context, storeId string) error {
-	err := a.deleteSecretStore(ctx, storeId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *secretsHubAPI) deleteSecretStore(ctx context.Context, storeId string) error {
+func (a *secretsHubAPI) DeleteSecretStore(ctx context.Context, storeId string) error {
 	response, err := a.client.DoRequest(
 		ctx,
 		"DELETE",

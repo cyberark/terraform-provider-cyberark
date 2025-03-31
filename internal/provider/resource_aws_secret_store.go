@@ -255,7 +255,7 @@ func (r *awsSecretStoreResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	err := r.api.SecretsHubAPI.DeleteAwsSecretStore(ctx, state.ID.ValueString())
+	err := r.api.SecretsHubAPI.DeleteSecretStore(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting AWS secret store",
 			fmt.Sprintf("Error while deleting secret store: %+v", err))
