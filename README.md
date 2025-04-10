@@ -347,6 +347,95 @@ $ terraform plan
 
   2. API : Use the documentation below to make an API call and retrieve the Privilege Cloud StoreID. (https://docs.cyberark.com/secrets-hub-privilege-cloud/Latest/en/Content/Developer/sh-policy-api-tutorial.htm?tocpath=Developer%7CTutorials%7C_____4).
 
+## Resource Lifecycle Management
+
+The CyberArk Terraform Provider supports complete lifecycle management for resources including import, update, and delete operations.
+
+### Importing Existing Resources
+
+You can import existing resources into your Terraform state using the `terraform import` command. This is useful when you want to start managing existing infrastructure with Terraform.
+
+```sh
+# Import an existing AWS account
+terraform import cyberark_aws_account.my_account <account_id>
+
+# Import an existing safe
+terraform import cyberark_safe.my_safe <safe_name>
+
+# Import an existing sync policy
+terraform import cyberark_sync_policy.my_policy <policy_id>
+```
+
+### Updating Resources
+
+Resources can be updated by modifying your Terraform configuration and running `terraform apply`.
+
+#### Safe Update Example
+```terraform
+resource "cyberark_safe" "my_safe" {
+  safe_name        = "example_safe"
+  safe_desc        = "Updated safe description"  # Modified field
+  member           = "secretshub"
+  member_type      = "user"
+  permission_level = "full"
+  retention        = 14  # Modified retention period
+  purge            = false
+}
+```
+
+#### Account Update Example
+```terraform
+resource "cyberark_aws_account" "my_account" {
+  name                        = "aws-account"
+  username                    = "aws-user"
+  platform                    = "AWS"
+  safe                        = "aws_safe"
+  secret                      = var.secret_key
+  secret_name_in_secret_store = "updated_aws_secret_name"  # Modified field
+  sm_manage                   = true  # Modified field
+  sm_manage_reason            = "Updated for compliance"  # Modified field
+  aws_kid                     = var.aws_key_id
+  aws_account_id              = var.aws_account_id
+  aws_alias                   = var.aws_alias
+  aws_account_region          = var.aws_region
+}
+```
+
+#### Secret Store Update Example
+```terraform
+resource "cyberark_aws_secret_store" "my_secret_store" {
+  name               = "aws-secret-store"
+  description        = "Updated AWS store description"  # Modified field
+  aws_account_id     = var.aws_account_id
+  aws_account_region = "us-east-1"
+  aws_account_alias  = "updated-aws-alias"  # Modified field
+  aws_iam_role       = var.aws_iam_role
+}
+```
+
+#### Sync Policy Update Example
+```terraform
+resource "cyberark_sync_policy" "my_policy" {
+  name        = "sync-policy"
+  description = "Updated policy description"  # Modified field
+  safe_name   = var.safe_name
+  source_id   = var.source_id
+  target_id   = var.target_id
+}
+```
+
+### Deleting Resources
+
+Resources can be deleted by removing them from your Terraform configuration and running `terraform apply`, or by using `terraform destroy` for the entire configuration.
+
+```sh
+# Delete a specific resource
+terraform destroy -target=cyberark_aws_account.my_account
+
+# Delete all resources in the configuration
+terraform destroy
+```
+
 ## Documentation
 
 ### Provider
@@ -370,17 +459,3 @@ $ terraform plan
 ## Usage instructions
 
 See [here](examples/) for examples.
-
-## Limitations
-
-The CyberArk Terraform Provider plugin does not support the following features:
-
-- Update safe
-- Delete safe
-- Update account
-- Delete account
-- Update secret store
-- Delete secret store
-- Update sync policy
-- Delete sync policy
-- Rotation of auth token
