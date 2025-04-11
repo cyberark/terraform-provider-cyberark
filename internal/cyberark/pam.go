@@ -32,9 +32,9 @@ type Safe interface {
 
 // SafeMember is an interface for interacting with SecretsHub's safe members.
 type SafeMember interface {
-	AddSafeMember(ctx context.Context, safe SafeData) error
-	GetSafeMember(ctx context.Context)
-	UpdateSafeMember(ctx context.Context, safe SafeData) error
+	AddSafeMember(ctx context.Context, safe SafeData) (*Member, error)
+	GetSafeMember(ctx context.Context, safe SafeData) (*Member, error)
+	UpdateSafeMember(ctx context.Context, safe SafeData) (*Member, error)
 	DeleteSafeMember(ctx context.Context, safeName string, memberName string) error
 }
 
@@ -198,6 +198,7 @@ func (a *pamAPI) UpdateAccount(ctx context.Context, accountID string, credential
 	}
 
 	if response.StatusCode != 200 {
+		tflog.Error(ctx, fmt.Sprintf("failed to update account, got response: %s", response.Body))
 		return nil, fmt.Errorf("failed to update account. Expected status code 200, got %d", response.StatusCode)
 	}
 
@@ -331,6 +332,7 @@ func (a *pamAPI) DeleteAccount(ctx context.Context, accountID string) error {
 	}
 
 	if response.StatusCode != 204 {
+		tflog.Error(ctx, fmt.Sprintf("failed to delete account, got response: %s", response.Body))
 		return fmt.Errorf("failed to delete account. Expected status code 204, got %d", response.StatusCode)
 	}
 
@@ -423,6 +425,7 @@ func (a *pamAPI) UpdateSafe(ctx context.Context, safeID string, safe SafeData) (
 	}
 
 	if response.StatusCode != 200 {
+		tflog.Error(ctx, fmt.Sprintf("failed to update safe, got response: %s", response.Body))
 		return nil, fmt.Errorf("failed to update safe. Expected status code 200, got %d", response.StatusCode)
 	}
 
@@ -453,6 +456,7 @@ func (a *pamAPI) DeleteSafe(ctx context.Context, safeID string) error {
 	}
 
 	if response.StatusCode != 204 {
+		tflog.Error(ctx, fmt.Sprintf("failed to delete safe, got response: %s", response.Body))
 		return fmt.Errorf("failed to delete safe. Expected status code 204, got %d", response.StatusCode)
 	}
 
@@ -461,7 +465,7 @@ func (a *pamAPI) DeleteSafe(ctx context.Context, safeID string) error {
 }
 
 // AddSafeMember adds a new member to a safe in the SecretsHub.
-func (a *pamAPI) AddSafeMember(ctx context.Context, safe SafeData) error {
+func (a *pamAPI) AddSafeMember(ctx context.Context, safe SafeData) (*Member, error) {
 	tflog.Debug(ctx, fmt.Sprintf("Generating Permission %s.", *safe.Level))
 	tflog.Debug(ctx, fmt.Sprintf("Ownership Properties: %s, %s, %s", *safe.Owner, *safe.OwnerType, *safe.Level))
 
@@ -482,32 +486,61 @@ func (a *pamAPI) AddSafeMember(ctx context.Context, safe SafeData) error {
 		map[string]string{},
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response.StatusCode == 409 {
 		tflog.Info(ctx, fmt.Sprintf("Safe [%s] already has member [%s].", *safe.Name, *safe.Owner))
-		return nil
+		return nil, nil
 	} else if response.StatusCode != 201 {
-		return fmt.Errorf("failed to add safe member, expected status code 201, got %d", response.StatusCode)
+		return nil, fmt.Errorf("failed to add safe member, expected status code 201, got %d", response.StatusCode)
 	}
 
-	return nil
+	safeMember := Member{}
+	err = json.NewDecoder(response.Body).Decode(&safeMember)
+	if err != nil {
+		return nil, err
+	}
+
+	return &safeMember, nil
 }
 
-// GetSafeMember retrieves a safe member from the SecretsHub.
-func (a *pamAPI) GetSafeMember(_ context.Context) {
+// GetSafeMember retrieves a safe member
+func (a *pamAPI) GetSafeMember(ctx context.Context, safe SafeData) (*Member, error) {
+	response, err := a.client.DoRequest(
+		ctx,
+		"GET",
+		fmt.Sprintf("/PasswordVault/API/Safes/%s/Members/%s", *safe.Name, *safe.Owner),
+		nil,
+		map[string]string{},
+		map[string]string{},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to get safe member. Expected status code 200, got %d", response.StatusCode)
+	}
+
+	safeMember := Member{}
+	err = json.NewDecoder(response.Body).Decode(&safeMember)
+	if err != nil {
+		return nil, err
+	}
+
+	return &safeMember, nil
 }
 
-// UpdateSafeMember updates a safe member in the SecretsHub.
-func (a *pamAPI) UpdateSafeMember(ctx context.Context, safe SafeData) error {
+// UpdateSafeMember updates a safe member
+func (a *pamAPI) UpdateSafeMember(ctx context.Context, safe SafeData) (*Member, error) {
 	tflog.Debug(ctx, fmt.Sprintf("Updating permission for member %s to level %s.", *safe.Owner, *safe.Level))
 	tflog.Debug(ctx, fmt.Sprintf("Ownership Properties: %s, %s, %s", *safe.Owner, *safe.OwnerType, *safe.Level))
 
 	block, err := generateSafePermissions(&safe)
 	if err != nil {
 		tflog.Error(ctx, "Error generating permissions block.")
-		return err
+		return nil, err
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("Generated updated permission block for: %s", *safe.Owner))
@@ -522,15 +555,22 @@ func (a *pamAPI) UpdateSafeMember(ctx context.Context, safe SafeData) error {
 		map[string]string{},
 	)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	updatedSafeMember := Member{}
+	err = json.NewDecoder(response.Body).Decode(&updatedSafeMember)
+	if err != nil {
+		return nil, err
 	}
 
 	if response.StatusCode != 200 {
-		return fmt.Errorf("failed to update safe member, expected status code 200, got %d", response.StatusCode)
+		tflog.Error(ctx, fmt.Sprintf("failed to update safe member, got response: %s", response.Body))
+		return nil, fmt.Errorf("failed to update safe member, expected status code 200, got %d", response.StatusCode)
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("Successfully updated member [%s] permissions in safe [%s]", *safe.Owner, *safe.Name))
-	return nil
+	return &updatedSafeMember, nil
 }
 
 // DeleteSafeMember deletes a safe member from the SecretsHub.

@@ -60,7 +60,7 @@ For more information click [here](https://docs.cyberark.com/pam-self-hosted/late
 			},
 			"address": schema.StringAttribute{
 				Description: "URI, URL or IP associated with the credential.",
-				Required:    true,
+				Optional:    true,
 			},
 			"username": schema.StringAttribute{
 				Description: "Username of the Credential object.",
@@ -250,7 +250,7 @@ func (r *pvwaAzureAccountResource) Read(ctx context.Context, req resource.ReadRe
 		Platform:                types.StringPointerValue(newState.Platform),
 		Safe:                    types.StringPointerValue(newState.SafeName),
 		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  types.StringPointerValue(newState.Secret),
+		Secret:                  data.Secret, // Secret is not returned by the API
 		ID:                      types.StringPointerValue(newState.CredID),
 		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
 		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
@@ -289,13 +289,13 @@ func (r *pvwaAzureAccountResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	updatedAccount := cybrapi.Credential{
-		Name:       data.Name.ValueStringPointer(),
-		Address:    data.Address.ValueStringPointer(),
-		UserName:   data.Username.ValueStringPointer(),
-		Platform:   data.Platform.ValueStringPointer(),
-		SafeName:   data.Safe.ValueStringPointer(),
-		SecretType: data.SecretType.ValueStringPointer(),
-		Secret:     data.Secret.ValueStringPointer(),
+		Name:     data.Name.ValueStringPointer(),
+		Address:  data.Address.ValueStringPointer(),
+		UserName: data.Username.ValueStringPointer(),
+		Platform: data.Platform.ValueStringPointer(),
+		SafeName: data.Safe.ValueStringPointer(),
+		// SecretType can not be updated
+		// Secret can not be updated
 		Props: &cybrapi.AccountProps{
 			MAppID:                  data.MAppID.ValueStringPointer(),
 			MAppObjectID:            data.MAppObjectID.ValueStringPointer(),

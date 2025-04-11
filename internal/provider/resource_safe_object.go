@@ -97,10 +97,12 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"safe_loc": schema.StringAttribute{
 				Description: "The location of the Safe in the Vault.",
+				Computed:    true,
 				Optional:    true,
 			},
 			"cpm_name": schema.StringAttribute{
 				Description: "The name of the CPM user who will manage the new Safe.",
+				Computed:    true,
 				Optional:    true,
 			},
 			"retention": schema.Int64Attribute{
@@ -180,14 +182,26 @@ func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 	}
 
-	err = r.api.PamAPI.AddSafeMember(ctx, newSafe)
+	_, err = r.api.PamAPI.AddSafeMember(ctx, newSafe)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating Safe Member", fmt.Sprintf("Error adding member to the Safe: (%+v)", err))
 		return
 	}
 
-	data.ID = types.StringPointerValue(safe.URLID)
-	data.IDNUM = types.Int64PointerValue(safe.NUMBER)
+	data = safeResourceModel{
+		ID:                types.StringPointerValue(safe.URLID),
+		IDNUM:             types.Int64PointerValue(safe.NUMBER),
+		RetentionDays:     types.Int64PointerValue(safe.RetentionDays),
+		RetentionVersions: types.Int64PointerValue(safe.RetentionVersions),
+		PurgeEnabled:      types.BoolPointerValue(safe.PurgeEnabled),
+		CPM:               types.StringPointerValue(safe.CPM),
+		Name:              types.StringPointerValue(safe.Name),
+		Description:       types.StringPointerValue(safe.Description),
+		Location:          types.StringPointerValue(safe.Location),
+		SeedMember:        data.SeedMember, // Can not be read from API
+		SeedMType:         data.SeedMType,  // Can not be read from API
+		PermType:          data.PermType,   // Can not be read from API
+	}
 
 	// Set last updated time to last refreshed time
 	if safe.LastModificationTime != nil {
@@ -223,13 +237,13 @@ func (r *safeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		RetentionDays:     types.Int64PointerValue(safe.RetentionDays),
 		RetentionVersions: types.Int64PointerValue(safe.RetentionVersions),
 		PurgeEnabled:      types.BoolPointerValue(safe.PurgeEnabled),
-		CPM:               data.CPM,
+		CPM:               types.StringPointerValue(safe.CPM),
 		Name:              types.StringPointerValue(safe.Name),
 		Description:       types.StringPointerValue(safe.Description),
-		Location:          data.Location,
-		SeedMember:        data.SeedMember,
-		SeedMType:         data.SeedMType,
-		PermType:          data.PermType,
+		Location:          types.StringPointerValue(safe.Location),
+		SeedMember:        data.SeedMember, // Can not be read from API
+		SeedMType:         data.SeedMType,  // Can not be read from API
+		PermType:          data.PermType,   // Can not be read from API
 	}
 
 	// Set last updated time to last refreshed time
@@ -256,16 +270,6 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	// Validate permission level
-	switch data.PermType.ValueString() {
-	case "full", "read", "approver", "manager":
-		// valid options
-	default:
-		resp.Diagnostics.AddError("Permission Level Error",
-			fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
-		return
-	}
-
 	updatedSafe := cybrapi.SafeData{
 		RetentionDays:     data.RetentionDays.ValueInt64Pointer(),
 		RetentionVersions: data.RetentionVersions.ValueInt64Pointer(),
@@ -289,16 +293,42 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	err = r.api.PamAPI.UpdateSafeMember(ctx, updatedSafe)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating Safe Member",
-			fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
-		return
+	if !state.SeedMember.IsNull() && !state.SeedMType.IsNull() && !state.PermType.IsNull() {
+		// Validate permission level
+		switch data.PermType.ValueString() {
+		case "full", "read", "approver", "manager":
+			// valid options
+		default:
+			resp.Diagnostics.AddError("Permission Level Error",
+				fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
+			return
+		}
+
+		_, err = r.api.PamAPI.UpdateSafeMember(ctx, updatedSafe)
+		if err != nil {
+			resp.Diagnostics.AddError("Error updating Safe Member",
+				fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
+			return
+		}
+	} else {
+		resp.Diagnostics.AddWarning("Warning updating Safe Member",
+			"Safe Member not found in state, skipping update")
 	}
 
-	// Update ID fields in case they changed
-	data.ID = types.StringPointerValue(safe.URLID)
-	data.IDNUM = types.Int64PointerValue(safe.NUMBER)
+	data = safeResourceModel{
+		ID:                types.StringPointerValue(safe.URLID),
+		IDNUM:             types.Int64PointerValue(safe.NUMBER),
+		RetentionDays:     types.Int64PointerValue(safe.RetentionDays),
+		RetentionVersions: types.Int64PointerValue(safe.RetentionVersions),
+		PurgeEnabled:      types.BoolPointerValue(safe.PurgeEnabled),
+		CPM:               types.StringPointerValue(safe.CPM),
+		Name:              types.StringPointerValue(safe.Name),
+		Description:       types.StringPointerValue(safe.Description),
+		Location:          types.StringPointerValue(safe.Location),
+		SeedMember:        data.SeedMember, // Can not be read from API
+		SeedMType:         data.SeedMType,  // Can not be read from API
+		PermType:          data.PermType,   // Can not be read from API
+	}
 
 	// Update last updated time
 	if safe.LastModificationTime != nil {
@@ -322,18 +352,23 @@ func (r *safeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	// First delete the safe member
-	err := r.api.PamAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting Safe Member",
-			fmt.Sprintf("Error while deleting Safe Member: %+v", err))
-		// Continue with safe deletion even if member deletion fails
+	// First delete the safe member if possible
+	if !data.SeedMember.IsNull() && !data.SeedMType.IsNull() && !data.PermType.IsNull() {
+		err := r.api.PamAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Error deleting Safe Member",
+				fmt.Sprintf("Error while deleting Safe Member: %+v", err))
+			// Continue with safe deletion even if member deletion fails
+		} else {
+			tflog.Info(ctx, "Safe Member deleted successfully")
+		}
 	} else {
-		tflog.Info(ctx, "Safe Member deleted successfully")
+		resp.Diagnostics.AddWarning("Warning deleting Safe Member",
+			"Safe Member not found in state, skipping deletion")
 	}
 
 	// Then delete the safe
-	err = r.api.PamAPI.DeleteSafe(ctx, data.Name.ValueString())
+	err := r.api.PamAPI.DeleteSafe(ctx, data.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting Safe",
 			fmt.Sprintf("Error while deleting Safe: %+v", err))

@@ -18,9 +18,10 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource                = &syncPolicyResource{}
-	_ resource.ResourceWithConfigure   = &syncPolicyResource{}
-	_ resource.ResourceWithImportState = &syncPolicyResource{}
+	_ resource.Resource                   = &syncPolicyResource{}
+	_ resource.ResourceWithConfigure      = &syncPolicyResource{}
+	_ resource.ResourceWithValidateConfig = &syncPolicyResource{}
+	_ resource.ResourceWithImportState    = &syncPolicyResource{}
 )
 
 // NewSyncPolicyResource is a helper function to simplify the provider implementation.
@@ -90,7 +91,8 @@ For more information click [here](https://docs.cyberark.com/secrets-hub-privileg
 			},
 			"transformation": schema.StringAttribute{
 				Description: "To sync only the password as plain text to password_only_plain_text",
-				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString("password_only_plain_text"),
 			},
 			"description": schema.StringAttribute{
 				Description: "Description for policy.",
@@ -118,6 +120,24 @@ func (r *syncPolicyResource) Configure(_ context.Context, req resource.Configure
 	r.api = api
 }
 
+// ValidateConfig validates the resource configuration.
+func (r *syncPolicyResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data syncPolicyModel
+
+	// Read Terraform configuration data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate the transformation value if provided
+	if !data.Transformation.IsNull() && data.Transformation != types.StringValue("default") && data.Transformation != types.StringValue("password_only_plain_text") {
+		resp.Diagnostics.AddError("Invalid Transformation Value",
+			fmt.Sprintf("Transformation value must be either 'default' or 'password_only_plain_text', got: %s", data.Transformation.ValueString()),
+		)
+	}
+}
+
 // Create a new resource.
 func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data syncPolicyModel
@@ -143,7 +163,9 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 				SafeName: data.SafeName.ValueStringPointer(),
 			},
 		},
-		Transformation: transformationValue(data.Transformation),
+		Transformation: &cybrapi.TransformationValue{
+			Predefined: data.Transformation.ValueString(),
+		},
 	}
 
 	policies, err := r.api.SecretsHubAPI.GetSyncPolicies(ctx)
@@ -175,15 +197,6 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func transformationValue(transformation types.String) *cybrapi.TransformationValue {
-	if transformation.IsNull() {
-		return nil
-	}
-	return &cybrapi.TransformationValue{
-		Predefined: transformation.ValueString(),
-	}
 }
 
 // Read the resource state.
@@ -251,7 +264,9 @@ func (r *syncPolicyResource) Update(ctx context.Context, req resource.UpdateRequ
 				SafeName: data.SafeName.ValueStringPointer(),
 			},
 		},
-		Transformation: transformationValue(data.Transformation),
+		Transformation: &cybrapi.TransformationValue{
+			Predefined: data.Transformation.ValueString(),
+		},
 	}
 
 	// Call API to update (delete and recreate) the policy

@@ -187,14 +187,27 @@ func (r *pvwaSafeResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	err = r.api.PVWAAPI.AddSafeMember(ctx, newSafe)
+	_, err = r.api.PVWAAPI.AddSafeMember(ctx, newSafe)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating Safe Member", fmt.Sprintf("Error adding member to the Safe: (%+v)", err))
 		return
 	}
 
-	data.ID = types.StringPointerValue(safe.URLID)
-	data.IDNUM = types.Int64PointerValue(safe.NUMBER)
+	data = pvwaSafeResourceModel{
+		ID:                types.StringPointerValue(safe.URLID),
+		IDNUM:             types.Int64PointerValue(safe.NUMBER),
+		RetentionDays:     types.Int64PointerValue(safe.RetentionDays),
+		RetentionVersions: types.Int64PointerValue(safe.RetentionVersions),
+		PurgeEnabled:      types.BoolPointerValue(safe.PurgeEnabled),
+		CPM:               types.StringPointerValue(safe.CPM),
+		Name:              types.StringPointerValue(safe.Name),
+		Description:       types.StringPointerValue(safe.Description),
+		Location:          types.StringPointerValue(safe.Location),
+		SeedMember:        data.SeedMember, // Can not be read from API
+		SeedMType:         data.SeedMType,  // Can not be read from API
+		PermType:          data.PermType,   // Can not be read from API
+		EnableOLAC:        types.BoolPointerValue(safe.EnableOLAC),
+	}
 
 	// Set last updated time to last refreshed time
 	if safe.LastModificationTime != nil {
@@ -236,9 +249,9 @@ func (r *pvwaSafeResource) Read(ctx context.Context, req resource.ReadRequest, r
 		Name:              types.StringPointerValue(safe.Name),
 		Description:       types.StringPointerValue(safe.Description),
 		Location:          types.StringPointerValue(safe.Location),
-		SeedMember:        types.StringPointerValue(safe.Owner),
-		SeedMType:         types.StringPointerValue(safe.OwnerType),
-		PermType:          types.StringPointerValue(safe.Level),
+		SeedMember:        data.SeedMember, // Can not be read from API
+		SeedMType:         data.SeedMType,  // Can not be read from API
+		PermType:          data.PermType,   // Can not be read from API
 		EnableOLAC:        types.BoolPointerValue(safe.EnableOLAC),
 	}
 
@@ -266,16 +279,6 @@ func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Validate permission level
-	switch data.PermType.ValueString() {
-	case "full", "read", "approver", "manager":
-		// valid options
-	default:
-		resp.Diagnostics.AddError("Permission Level Error",
-			fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
-		return
-	}
-
 	updatedSafe := cybrapi.SafeData{
 		RetentionDays:     data.RetentionDays.ValueInt64Pointer(),
 		RetentionVersions: data.RetentionVersions.ValueInt64Pointer(),
@@ -300,16 +303,42 @@ func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	err = r.api.PVWAAPI.UpdateSafeMember(ctx, updatedSafe)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating Safe Member",
-			fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
-		return
+	if !state.SeedMember.IsNull() && !state.SeedMType.IsNull() && !state.PermType.IsNull() {
+		// Validate permission level
+		switch data.PermType.ValueString() {
+		case "full", "read", "approver", "manager":
+			// valid options
+		default:
+			resp.Diagnostics.AddError("Permission Level Error",
+				fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
+			return
+		}
+
+		_, err = r.api.PamAPI.UpdateSafeMember(ctx, updatedSafe)
+		if err != nil {
+			resp.Diagnostics.AddError("Error updating Safe Member",
+				fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
+			return
+		}
+	} else {
+		resp.Diagnostics.AddWarning("Warning updating Safe Member",
+			"Safe Member not found in state, skipping update")
 	}
 
-	// Update ID fields in case they changed
-	data.ID = types.StringPointerValue(safe.URLID)
-	data.IDNUM = types.Int64PointerValue(safe.NUMBER)
+	data = pvwaSafeResourceModel{
+		ID:                types.StringPointerValue(safe.URLID),
+		IDNUM:             types.Int64PointerValue(safe.NUMBER),
+		RetentionDays:     types.Int64PointerValue(safe.RetentionDays),
+		RetentionVersions: types.Int64PointerValue(safe.RetentionVersions),
+		PurgeEnabled:      types.BoolPointerValue(safe.PurgeEnabled),
+		CPM:               types.StringPointerValue(safe.CPM),
+		Name:              types.StringPointerValue(safe.Name),
+		Description:       types.StringPointerValue(safe.Description),
+		Location:          types.StringPointerValue(safe.Location),
+		SeedMember:        data.SeedMember, // Can not be read from API
+		SeedMType:         data.SeedMType,  // Can not be read from API
+		PermType:          data.PermType,   // Can not be read from API
+	}
 
 	// Update last updated time
 	if safe.LastModificationTime != nil {
@@ -333,18 +362,23 @@ func (r *pvwaSafeResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	// First delete the safe member
-	err := r.api.PVWAAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting Safe Member",
-			fmt.Sprintf("Error while deleting Safe Member: %+v", err))
-		// Continue with safe deletion even if member deletion fails
+	// First delete the safe member if possible
+	if !data.SeedMember.IsNull() && !data.SeedMType.IsNull() && !data.PermType.IsNull() {
+		err := r.api.PamAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Error deleting Safe Member",
+				fmt.Sprintf("Error while deleting Safe Member: %+v", err))
+			// Continue with safe deletion even if member deletion fails
+		} else {
+			tflog.Info(ctx, "Safe Member deleted successfully")
+		}
 	} else {
-		tflog.Info(ctx, "Safe Member deleted successfully")
+		resp.Diagnostics.AddWarning("Warning deleting Safe Member",
+			"Safe Member not found in state, skipping deletion")
 	}
 
 	// Then delete the safe
-	err = r.api.PVWAAPI.DeleteSafe(ctx, data.Name.ValueString())
+	err := r.api.PVWAAPI.DeleteSafe(ctx, data.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting Safe",
 			fmt.Sprintf("Error while deleting Safe: %+v", err))

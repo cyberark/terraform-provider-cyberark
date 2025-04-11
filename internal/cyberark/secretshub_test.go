@@ -670,8 +670,8 @@ func TestDeleteSyncPolicy(t *testing.T) {
 				assert.Equal(t, "disable", requestBody["action"])
 				rw.WriteHeader(http.StatusOK)
 			case req.Method == http.MethodDelete && req.URL.Path == fmt.Sprintf("/api/policies/%s", policyID):
-				// Verify the delete request
-				rw.WriteHeader(http.StatusNoContent)
+				// Verify the delete request - should return 200 OK per implementation
+				rw.WriteHeader(http.StatusOK)
 			default:
 				http.Error(rw, "Unexpected request", http.StatusBadRequest)
 			}
@@ -691,8 +691,8 @@ func TestDeleteSyncPolicy(t *testing.T) {
 				// Simulate disable failure
 				http.Error(rw, "Failed to disable", http.StatusInternalServerError)
 			case req.Method == http.MethodDelete && req.URL.Path == fmt.Sprintf("/api/policies/%s", policyID):
-				// Delete still succeeds
-				rw.WriteHeader(http.StatusNoContent)
+				// Delete still succeeds - should return 200 OK per implementation
+				rw.WriteHeader(http.StatusOK)
 			default:
 				http.Error(rw, "Unexpected request", http.StatusBadRequest)
 			}
