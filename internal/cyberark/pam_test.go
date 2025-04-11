@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
@@ -287,36 +288,74 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 
 func TestUpdateAccount(t *testing.T) {
 	t.Run("UpdateAccount", func(t *testing.T) {
+		// Track if both endpoints are called
+		getAccountCalled := false
+		patchAccountCalled := false
+
+		updatedAddress := "updated_address"
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, "PUT", req.Method)
-			assert.Contains(t, req.URL.Path, credID)
-
-			body, _ := io.ReadAll(req.Body)
-			req.Body.Close()
-			assert.Contains(t, string(body), `"name":"user"`)
-
-			rw.WriteHeader(http.StatusOK)
-			resp := cyberark.CredentialResponse{
-				CredID:   &credID,
-				UserName: &name,
-				Name:     &name,
+			// First the function will call GetAccount
+			if req.Method == "GET" && strings.Contains(req.URL.Path, credID) {
+				getAccountCalled = true
+				// Return existing account
+				existingAccount := cyberark.CredentialResponse{
+					CredID:   &credID,
+					UserName: &name,
+					Name:     &name,
+					// Existing account without address field
+				}
+				json.NewEncoder(rw).Encode(existingAccount)
+				return
 			}
-			json.NewEncoder(rw).Encode(resp)
+
+			// Then it will send a PATCH request with the changes
+			if req.Method == "PATCH" && strings.Contains(req.URL.Path, credID) {
+				patchAccountCalled = true
+
+				body, _ := io.ReadAll(req.Body)
+				req.Body.Close()
+
+				// Verify JSON patch format contains expected operations
+				assert.Contains(t, string(body), `"op":"replace"`)
+				assert.Contains(t, string(body), `"path":"/address"`)
+				assert.Contains(t, string(body), `"value":"updated_address"`)
+
+				rw.WriteHeader(http.StatusOK)
+				resp := cyberark.CredentialResponse{
+					CredID:   &credID,
+					UserName: &name,
+					Name:     &name,
+					Address:  &updatedAddress,
+				}
+				json.NewEncoder(rw).Encode(resp)
+				return
+			}
+
+			// Unexpected request
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte("Unexpected request"))
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		credentials := cyberark.Credential{
-			Name: &name,
+			Name:    &name,
+			Address: &updatedAddress,
 		}
 
 		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
+
+		// Verify both endpoints were called
+		assert.True(t, getAccountCalled, "GetAccount should have been called")
+		assert.True(t, patchAccountCalled, "PATCH request should have been made")
 
 		expectedData := cyberark.CredentialResponse{
 			CredID:   &credID,
 			UserName: &name,
 			Name:     &name,
+			Address:  &updatedAddress,
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expectedData, *resp)

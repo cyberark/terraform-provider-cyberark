@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -159,16 +160,34 @@ func (a *pamAPI) filters(search string, filter []string) (query map[string]strin
 	return query
 }
 
-// UpdateAccount updates an account in the SecretsHub.
+// UpdateAccount updates an account in the SecretsHub using JSON Patch.
 func (a *pamAPI) UpdateAccount(ctx context.Context, accountID string, credential Credential) (*CredentialResponse, error) {
-	body, err := json.Marshal(credential)
+	// Fetch the existing account to compare with the desired state
+	existingAccount, err := a.GetAccount(ctx, accountID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get existing account for update: %w", err)
+	}
+
+	// Generate the JSON Patch
+	patch, err := generateAccountPatch(existingAccount, &credential)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate JSON patch: %w", err)
+	}
+
+	// If there are no changes, return early
+	if len(patch) == 0 {
+		tflog.Info(ctx, "No changes detected, skipping account update")
+		return existingAccount, nil
+	}
+
+	body, err := json.Marshal(patch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON patch: %w", err)
 	}
 
 	response, err := a.client.DoRequest(
 		ctx,
-		"PUT",
+		"PATCH",
 		fmt.Sprintf("/PasswordVault/API/Accounts/%s", accountID),
 		bytes.NewBuffer(body),
 		map[string]string{},
@@ -192,6 +211,109 @@ func (a *pamAPI) UpdateAccount(ctx context.Context, accountID string, credential
 		*updatedAccount.UserName, *updatedAccount.Name, *updatedAccount.CredID))
 
 	return &updatedAccount, nil
+}
+
+// generateAccountPatch generates a JSON Patch for updating an account.
+func generateAccountPatch(existing *CredentialResponse, desired *Credential) ([]map[string]interface{}, error) {
+	patch := []map[string]interface{}{}
+
+	if existing == nil || desired == nil {
+		return patch, fmt.Errorf("existing and desired accounts must not be nil")
+	}
+
+	// Basic account properties
+	if desired.Name != nil && existing.Name != nil && *existing.Name != *desired.Name {
+		patch = append(patch, map[string]interface{}{
+			"op":    "replace",
+			"path":  "/name",
+			"value": *desired.Name,
+		})
+	}
+
+	if desired.Address != nil && existing.Address != nil && *existing.Address != *desired.Address {
+		patch = append(patch, map[string]interface{}{
+			"op":    "replace",
+			"path":  "/address",
+			"value": *desired.Address,
+		})
+	}
+
+	if desired.UserName != nil && existing.UserName != nil && *existing.UserName != *desired.UserName {
+		patch = append(patch, map[string]interface{}{
+			"op":    "replace",
+			"path":  "/userName",
+			"value": *desired.UserName,
+		})
+	}
+
+	if desired.Platform != nil && existing.Platform != nil && *existing.Platform != *desired.Platform {
+		patch = append(patch, map[string]interface{}{
+			"op":    "replace",
+			"path":  "/platformId",
+			"value": *desired.Platform,
+		})
+	}
+
+	if desired.Props != nil {
+		if existing.Props == nil {
+			// If existing has no properties but desired does, add them all
+			patch = append(patch, map[string]interface{}{
+				"op":    "add",
+				"path":  "/platformAccountProperties",
+				"value": desired.Props,
+			})
+		} else if !reflect.DeepEqual(existing.Props, desired.Props) {
+			// Only update if there are actual differences
+			patch = append(patch, map[string]interface{}{
+				"op":    "replace",
+				"path":  "/platformAccountProperties",
+				"value": desired.Props,
+			})
+		}
+	}
+
+	// Secret management properties
+	if desired.SecretMgmt != nil {
+		// Handle automaticManagementEnabled
+		if desired.SecretMgmt.AutomaticManagement != nil {
+			automaticManagementChanged := false
+
+			if existing.SecretMgmt == nil || existing.SecretMgmt.AutomaticManagement == nil {
+				automaticManagementChanged = true
+			} else if *existing.SecretMgmt.AutomaticManagement != *desired.SecretMgmt.AutomaticManagement {
+				automaticManagementChanged = true
+			}
+
+			if automaticManagementChanged {
+				patch = append(patch, map[string]interface{}{
+					"op":    "replace",
+					"path":  "/secretManagement/automaticManagementEnabled",
+					"value": *desired.SecretMgmt.AutomaticManagement,
+				})
+			}
+		}
+
+		// Handle manualManagementReason
+		if desired.SecretMgmt.ManualManagementReason != nil {
+			reasonChanged := false
+
+			if existing.SecretMgmt == nil || existing.SecretMgmt.ManualManagementReason == nil {
+				reasonChanged = true
+			} else if *existing.SecretMgmt.ManualManagementReason != *desired.SecretMgmt.ManualManagementReason {
+				reasonChanged = true
+			}
+
+			if reasonChanged {
+				patch = append(patch, map[string]interface{}{
+					"op":    "replace",
+					"path":  "/secretManagement/manualManagementReason",
+					"value": *desired.SecretMgmt.ManualManagementReason,
+				})
+			}
+		}
+	}
+
+	return patch, nil
 }
 
 // DeleteAccount deletes an account from the SecretsHub.
