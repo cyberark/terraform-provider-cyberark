@@ -10,7 +10,7 @@ services:
       TF_VAR_domain:
       TF_VAR_client_id:
       TF_VAR_client_secret:
-      TF_VAR_safename:
+      TF_VAR_safe_name:
       TF_VAR_secret_key:
       TF_VAR_aws_username:
       TF_VAR_azure_username:
