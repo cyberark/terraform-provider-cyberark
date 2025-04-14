@@ -36,6 +36,7 @@ type awsAccountResource struct {
 // awsCredModel describes the resource data model.
 type awsCredModel struct {
 	Name                    types.String `tfsdk:"name"`
+	Address                 types.String `tfsdk:"address"`
 	Username                types.String `tfsdk:"username"`
 	Platform                types.String `tfsdk:"platform"`
 	Safe                    types.String `tfsdk:"safe"`
@@ -76,6 +77,10 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			"name": schema.StringAttribute{
 				Description: "Custom Account Name for customizing the object name in a safe.",
 				Required:    true,
+			},
+			"address": schema.StringAttribute{
+				Description: "URI, URL or IP associated with the credential.",
+				Optional:    true,
 			},
 			"username": schema.StringAttribute{
 				Description: "Username of the Credential object.",
@@ -162,6 +167,7 @@ func (r *awsAccountResource) Create(ctx context.Context, req resource.CreateRequ
 
 	newAccount := cybrapi.Credential{
 		Name:       data.Name.ValueStringPointer(),
+		Address:    data.Address.ValueStringPointer(),
 		UserName:   data.Username.ValueStringPointer(),
 		Platform:   data.Platform.ValueStringPointer(),
 		SafeName:   data.Safe.ValueStringPointer(),
@@ -244,19 +250,20 @@ func (r *awsAccountResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	data = awsCredModel{
 		Name:                    types.StringPointerValue(newState.Name),
+		Address:                 types.StringPointerValue(newState.Address),
 		Username:                types.StringPointerValue(newState.UserName),
 		Platform:                types.StringPointerValue(newState.Platform),
 		Safe:                    types.StringPointerValue(newState.SafeName),
 		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  data.Secret,
 		ID:                      types.StringPointerValue(newState.CredID),
-		Manage:                  data.Manage,
-		ManageReason:            data.ManageReason,
-		AWSKID:                  data.AWSKID,
-		AWSAccount:              data.AWSAccount,
-		Alias:                   data.Alias,
-		Region:                  data.Region,
-		SecretNameInSecretStore: data.SecretNameInSecretStore,
+		Secret:                  data.Secret, // Secret is not returned by the API
+		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
+		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
+		AWSKID:                  types.StringPointerValue(newState.Props.AWSKID),
+		AWSAccount:              types.StringPointerValue(newState.Props.AWSAccount),
+		Alias:                   types.StringPointerValue(newState.Props.Alias),
+		Region:                  types.StringPointerValue(newState.Props.Region),
+		SecretNameInSecretStore: types.StringPointerValue(newState.Props.SecretNameInSecretStore),
 	}
 
 	// Set last updated time to last updated tim in the vault
@@ -284,17 +291,18 @@ func (r *awsAccountResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	updatedAccount := cybrapi.Credential{
-		Name:       data.Name.ValueStringPointer(),
-		UserName:   data.Username.ValueStringPointer(),
-		Platform:   data.Platform.ValueStringPointer(),
-		SafeName:   data.Safe.ValueStringPointer(),
-		SecretType: data.SecretType.ValueStringPointer(),
-		Secret:     data.Secret.ValueStringPointer(),
+		Name:     data.Name.ValueStringPointer(),
+		Address:  data.Address.ValueStringPointer(),
+		UserName: data.Username.ValueStringPointer(),
+		Platform: data.Platform.ValueStringPointer(),
+		SafeName: data.Safe.ValueStringPointer(),
+		// SecretType can not be updated
+		// Secret can not be updated
 		Props: &cybrapi.AccountProps{
-			AWSKID:                  data.AWSKID.ValueStringPointer(),
-			AWSAccount:              data.AWSAccount.ValueStringPointer(),
-			Alias:                   data.Alias.ValueStringPointer(),
-			Region:                  data.Region.ValueStringPointer(),
+			AWSKID:     data.AWSKID.ValueStringPointer(),
+			AWSAccount: data.AWSAccount.ValueStringPointer(),
+			Alias:      data.Alias.ValueStringPointer(),
+			// Region can not be updated
 			SecretNameInSecretStore: data.SecretNameInSecretStore.ValueStringPointer(),
 		},
 		SecretMgmt: &cybrapi.SecretManagement{

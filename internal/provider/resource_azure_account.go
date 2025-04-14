@@ -83,7 +83,7 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"address": schema.StringAttribute{
 				Description: "URI, URL or IP associated with the credential.",
-				Required:    true,
+				Optional:    true,
 			},
 			"username": schema.StringAttribute{
 				Description: "Username of the Credential object.",
@@ -274,18 +274,18 @@ func (r *azureAccountResource) Read(ctx context.Context, req resource.ReadReques
 		Platform:                types.StringPointerValue(newState.Platform),
 		Safe:                    types.StringPointerValue(newState.SafeName),
 		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  data.Secret,
+		Secret:                  data.Secret, // Secret is not returned by the API
 		ID:                      types.StringPointerValue(newState.CredID),
-		Manage:                  data.Manage,
-		ManageReason:            data.ManageReason,
-		MAppID:                  data.MAppID,
-		MAppObjectID:            data.MAppObjectID,
-		MKID:                    data.MKID,
-		MADID:                   data.MADID,
-		MDur:                    data.MDur,
-		MPop:                    data.MPop,
-		MKeyDesc:                data.MKeyDesc,
-		SecretNameInSecretStore: data.SecretNameInSecretStore,
+		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
+		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
+		MAppID:                  types.StringPointerValue(newState.Props.MAppID),
+		MAppObjectID:            types.StringPointerValue(newState.Props.MAppObjectID),
+		MKID:                    types.StringPointerValue(newState.Props.MKID),
+		MADID:                   types.StringPointerValue(newState.Props.MADID),
+		MDur:                    types.StringPointerValue(newState.Props.MDur),
+		MPop:                    types.StringPointerValue(newState.Props.MPop),
+		MKeyDesc:                types.StringPointerValue(newState.Props.MKeyDesc),
+		SecretNameInSecretStore: types.StringPointerValue(newState.Props.SecretNameInSecretStore),
 	}
 
 	// Set last updated time to last updated tim in the vault
@@ -313,13 +313,13 @@ func (r *azureAccountResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	updatedAccount := cybrapi.Credential{
-		Name:       data.Name.ValueStringPointer(),
-		Address:    data.Address.ValueStringPointer(),
-		UserName:   data.Username.ValueStringPointer(),
-		Platform:   data.Platform.ValueStringPointer(),
-		SafeName:   data.Safe.ValueStringPointer(),
-		SecretType: data.SecretType.ValueStringPointer(),
-		Secret:     data.Secret.ValueStringPointer(),
+		Name:     data.Name.ValueStringPointer(),
+		Address:  data.Address.ValueStringPointer(),
+		UserName: data.Username.ValueStringPointer(),
+		Platform: data.Platform.ValueStringPointer(),
+		SafeName: data.Safe.ValueStringPointer(),
+		// SecretType can not be updated
+		// Secret can not be updated
 		Props: &cybrapi.AccountProps{
 			MAppID:                  data.MAppID.ValueStringPointer(),
 			MAppObjectID:            data.MAppObjectID.ValueStringPointer(),

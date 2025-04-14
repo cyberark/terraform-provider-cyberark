@@ -244,6 +244,7 @@ func (a *secretsHubAPI) updateSecretStore(ctx context.Context, storeId string, b
 	}
 
 	if response.StatusCode != 200 {
+		tflog.Error(ctx, fmt.Sprintf("failed to update secret store, got response: %s", response.Body))
 		return fmt.Errorf("failed to update secret store, expected status code 200, got %d", response.StatusCode)
 	}
 
@@ -274,6 +275,7 @@ func (a *secretsHubAPI) DeleteSecretStore(ctx context.Context, storeId string) e
 	}
 
 	if response.StatusCode != 204 {
+		tflog.Error(ctx, fmt.Sprintf("failed to delete secret store, got response: %s", response.Body))
 		return fmt.Errorf("failed to delete secret store, expected status code 204, got %d", response.StatusCode)
 	}
 	return nil
@@ -339,6 +341,7 @@ func (a *secretsHubAPI) AddSyncPolicy(ctx context.Context, pi PolicyInput) (*Pol
 		tflog.Info(ctx, fmt.Sprintf("Sync policy [%s] already exists.", *pi.Name))
 		return nil, nil
 	} else if response.StatusCode != 201 {
+		tflog.Error(ctx, fmt.Sprintf("failed to add sync policy, got response: %s", response.Body))
 		return nil, fmt.Errorf("failed to add sync policy, expected status code 201, got %d", response.StatusCode)
 	}
 
@@ -470,7 +473,8 @@ func (a *secretsHubAPI) DeleteSyncPolicy(ctx context.Context, policyID string) e
 		return err
 	}
 
-	if response.StatusCode != 204 {
+	if response.StatusCode != 200 {
+		tflog.Error(ctx, fmt.Sprintf("failed to delete sync policy, got response: %s", response.Body))
 		return fmt.Errorf("failed to delete sync policy, expected status code 204, got %d", response.StatusCode)
 	}
 

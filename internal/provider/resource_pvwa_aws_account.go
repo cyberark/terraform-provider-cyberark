@@ -58,6 +58,10 @@ For more information click [here](https://docs.cyberark.com/pam-self-hosted/late
 				Description: "Custom Account Name for customizing the object name in a safe.",
 				Required:    true,
 			},
+			"address": schema.StringAttribute{
+				Description: "URI, URL or IP associated with the credential.",
+				Optional:    true,
+			},
 			"username": schema.StringAttribute{
 				Description: "Username of the Credential object.",
 				Required:    true,
@@ -144,6 +148,7 @@ func (r *pvwaAWSAccountResource) Create(ctx context.Context, req resource.Create
 
 	newAccount := cybrapi.Credential{
 		Name:       data.Name.ValueStringPointer(),
+		Address:    data.Address.ValueStringPointer(),
 		UserName:   data.Username.ValueStringPointer(),
 		Platform:   data.Platform.ValueStringPointer(),
 		SafeName:   data.Safe.ValueStringPointer(),
@@ -226,12 +231,13 @@ func (r *pvwaAWSAccountResource) Read(ctx context.Context, req resource.ReadRequ
 
 	data = awsCredModel{
 		Name:                    types.StringPointerValue(newState.Name),
+		Address:                 types.StringPointerValue(newState.Address),
 		Username:                types.StringPointerValue(newState.UserName),
 		Platform:                types.StringPointerValue(newState.Platform),
 		Safe:                    types.StringPointerValue(newState.SafeName),
 		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  types.StringPointerValue(newState.Secret),
 		ID:                      types.StringPointerValue(newState.CredID),
+		Secret:                  data.Secret, // Secret is not returned by the API
 		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
 		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
 		AWSKID:                  types.StringPointerValue(newState.Props.AWSKID),
@@ -266,17 +272,18 @@ func (r *pvwaAWSAccountResource) Update(ctx context.Context, req resource.Update
 	}
 
 	updatedAccount := cybrapi.Credential{
-		Name:       data.Name.ValueStringPointer(),
-		UserName:   data.Username.ValueStringPointer(),
-		Platform:   data.Platform.ValueStringPointer(),
-		SafeName:   data.Safe.ValueStringPointer(),
-		SecretType: data.SecretType.ValueStringPointer(),
-		Secret:     data.Secret.ValueStringPointer(),
+		Name:     data.Name.ValueStringPointer(),
+		Address:  data.Address.ValueStringPointer(),
+		UserName: data.Username.ValueStringPointer(),
+		Platform: data.Platform.ValueStringPointer(),
+		SafeName: data.Safe.ValueStringPointer(),
+		// SecretType can not be updated
+		// Secret can not be updated
 		Props: &cybrapi.AccountProps{
-			AWSKID:                  data.AWSKID.ValueStringPointer(),
-			AWSAccount:              data.AWSAccount.ValueStringPointer(),
-			Alias:                   data.Alias.ValueStringPointer(),
-			Region:                  data.Region.ValueStringPointer(),
+			AWSKID:     data.AWSKID.ValueStringPointer(),
+			AWSAccount: data.AWSAccount.ValueStringPointer(),
+			Alias:      data.Alias.ValueStringPointer(),
+			// Region can not be updated
 			SecretNameInSecretStore: data.SecretNameInSecretStore.ValueStringPointer(),
 		},
 		SecretMgmt: &cybrapi.SecretManagement{

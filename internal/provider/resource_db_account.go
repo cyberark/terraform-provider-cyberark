@@ -80,7 +80,7 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"address": schema.StringAttribute{
 				Description: "URI, URL or IP associated with the credential.",
-				Required:    true,
+				Optional:    true,
 			},
 			"username": schema.StringAttribute{
 				Description: "Username of the Credential object.",
@@ -251,14 +251,14 @@ func (r *dbAccountResource) Read(ctx context.Context, req resource.ReadRequest, 
 		Platform:                types.StringPointerValue(newState.Platform),
 		Safe:                    types.StringPointerValue(newState.SafeName),
 		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  data.Secret,
+		Secret:                  data.Secret, // Secret is not returned by the API
 		ID:                      types.StringPointerValue(newState.CredID),
-		DBPort:                  data.DBPort,
-		DBName:                  data.DBName,
-		DBDSN:                   data.DBDSN,
-		SecretNameInSecretStore: data.SecretNameInSecretStore,
-		Manage:                  data.Manage,
-		ManageReason:            data.ManageReason,
+		DBPort:                  types.StringPointerValue(newState.Props.Port),
+		DBName:                  types.StringPointerValue(newState.Props.DBName),
+		DBDSN:                   types.StringPointerValue(newState.Props.DSN),
+		SecretNameInSecretStore: types.StringPointerValue(newState.Props.SecretNameInSecretStore),
+		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
+		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
 	}
 
 	// Set last updated time to last updated time in the vault
@@ -286,13 +286,13 @@ func (r *dbAccountResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	updatedAccount := cybrapi.Credential{
-		Name:       data.Name.ValueStringPointer(),
-		Address:    data.Address.ValueStringPointer(),
-		UserName:   data.Username.ValueStringPointer(),
-		Platform:   data.Platform.ValueStringPointer(),
-		SafeName:   data.Safe.ValueStringPointer(),
-		SecretType: data.SecretType.ValueStringPointer(),
-		Secret:     data.Secret.ValueStringPointer(),
+		Name:     data.Name.ValueStringPointer(),
+		Address:  data.Address.ValueStringPointer(),
+		UserName: data.Username.ValueStringPointer(),
+		Platform: data.Platform.ValueStringPointer(),
+		SafeName: data.Safe.ValueStringPointer(),
+		// SecretType can not be updated
+		// Secret can not be updated
 		Props: &cybrapi.AccountProps{
 			Port:                    data.DBPort.ValueStringPointer(),
 			DBName:                  data.DBName.ValueStringPointer(),

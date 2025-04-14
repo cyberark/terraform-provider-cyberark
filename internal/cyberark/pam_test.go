@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
@@ -287,36 +288,74 @@ func TestFilterAccounts_SearchAndFilter(t *testing.T) {
 
 func TestUpdateAccount(t *testing.T) {
 	t.Run("UpdateAccount", func(t *testing.T) {
+		// Track if both endpoints are called
+		getAccountCalled := false
+		patchAccountCalled := false
+
+		updatedAddress := "updated_address"
+
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, "PUT", req.Method)
-			assert.Contains(t, req.URL.Path, credID)
-
-			body, _ := io.ReadAll(req.Body)
-			req.Body.Close()
-			assert.Contains(t, string(body), `"name":"user"`)
-
-			rw.WriteHeader(http.StatusOK)
-			resp := cyberark.CredentialResponse{
-				CredID:   &credID,
-				UserName: &name,
-				Name:     &name,
+			// First the function will call GetAccount
+			if req.Method == "GET" && strings.Contains(req.URL.Path, credID) {
+				getAccountCalled = true
+				// Return existing account
+				existingAccount := cyberark.CredentialResponse{
+					CredID:   &credID,
+					UserName: &name,
+					Name:     &name,
+					// Existing account without address field
+				}
+				json.NewEncoder(rw).Encode(existingAccount)
+				return
 			}
-			json.NewEncoder(rw).Encode(resp)
+
+			// Then it will send a PATCH request with the changes
+			if req.Method == "PATCH" && strings.Contains(req.URL.Path, credID) {
+				patchAccountCalled = true
+
+				body, _ := io.ReadAll(req.Body)
+				req.Body.Close()
+
+				// Verify JSON patch format contains expected operations
+				assert.Contains(t, string(body), `"op":"replace"`)
+				assert.Contains(t, string(body), `"path":"/address"`)
+				assert.Contains(t, string(body), `"value":"updated_address"`)
+
+				rw.WriteHeader(http.StatusOK)
+				resp := cyberark.CredentialResponse{
+					CredID:   &credID,
+					UserName: &name,
+					Name:     &name,
+					Address:  &updatedAddress,
+				}
+				json.NewEncoder(rw).Encode(resp)
+				return
+			}
+
+			// Unexpected request
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte("Unexpected request"))
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
 
 		credentials := cyberark.Credential{
-			Name: &name,
+			Name:    &name,
+			Address: &updatedAddress,
 		}
 
 		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
+
+		// Verify both endpoints were called
+		assert.True(t, getAccountCalled, "GetAccount should have been called")
+		assert.True(t, patchAccountCalled, "PATCH request should have been made")
 
 		expectedData := cyberark.CredentialResponse{
 			CredID:   &credID,
 			UserName: &name,
 			Name:     &name,
+			Address:  &updatedAddress,
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expectedData, *resp)
@@ -669,10 +708,18 @@ func TestAddSafeMember(t *testing.T) {
 				body, _ := io.ReadAll(req.Body)
 				req.Body.Close()
 
-				assert.Contains(t, req.URL.Path, name)
+				// Check for correct URL path format
+				expectedPath := fmt.Sprintf("/PasswordVault/API/Safes/%s/Members", name)
+				assert.Equal(t, expectedPath, req.URL.Path)
 				assert.NotEmpty(t, body)
 
+				// Return a proper Member object
 				rw.WriteHeader(http.StatusCreated)
+				resp := cyberark.Member{
+					Member:     &owner,
+					MemberType: &ownerType,
+				}
+				json.NewEncoder(rw).Encode(resp)
 			}))
 			defer server.Close()
 
@@ -685,10 +732,12 @@ func TestAddSafeMember(t *testing.T) {
 				Level:     &tc.level,
 			}
 
-			err := client.AddSafeMember(context.Background(), safe)
+			member, err := client.AddSafeMember(context.Background(), safe)
 
 			assert.NoError(t, err)
-			assert.Equal(t, nil, err)
+			assert.NotNil(t, member)
+			assert.Equal(t, owner, *member.Member)
+			assert.Equal(t, ownerType, *member.MemberType)
 		})
 	}
 
@@ -707,9 +756,10 @@ func TestAddSafeMember(t *testing.T) {
 			Level:     &levelManager,
 		}
 
-		err := client.AddSafeMember(context.Background(), safe)
+		member, err := client.AddSafeMember(context.Background(), safe)
 
 		assert.Error(t, err)
+		assert.Nil(t, member)
 	})
 
 	t.Run("MemberAlreadyExists", func(t *testing.T) {
@@ -727,23 +777,95 @@ func TestAddSafeMember(t *testing.T) {
 			Level:     &levelManager,
 		}
 
-		err := client.AddSafeMember(context.Background(), safe)
+		member, err := client.AddSafeMember(context.Background(), safe)
 
 		assert.NoError(t, err)
+		assert.Nil(t, member) // Should be nil when member already exists
 	})
-}
 
-func TestGetSafeMember(t *testing.T) {
-	// Since GetSafeMember is a placeholder function that doesn't do anything,
-	// we'll keep this as a basic verification but add a proper comment
-	t.Run("Placeholder Function", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+	t.Run("InvalidJSONResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			rw.WriteHeader(http.StatusCreated)
+			rw.Write([]byte(`invalid json`))
 		}))
 		defer server.Close()
 
 		client := cyberark.NewPAMAPI(server.URL, token, true)
-		client.GetSafeMember(context.Background())
-		// No assertions as the function currently does nothing
+
+		safe := cyberark.SafeData{
+			Name:      &name,
+			Owner:     &owner,
+			OwnerType: &ownerType,
+			Level:     &levelManager,
+		}
+
+		member, err := client.AddSafeMember(context.Background(), safe)
+
+		assert.Error(t, err)
+		assert.Nil(t, member)
+	})
+}
+
+func TestGetSafeMember(t *testing.T) {
+	t.Run("GetSafeMember", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "GET", req.Method)
+			assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s/Members/%s", name, owner), req.URL.Path)
+
+			resp := cyberark.Member{}
+			json.NewEncoder(rw).Encode(resp)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		safe := cyberark.SafeData{
+			Name:  &name,
+			Owner: &owner,
+		}
+
+		resp, err := client.GetSafeMember(context.Background(), safe)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		safe := cyberark.SafeData{
+			Name:  &name,
+			Owner: &owner,
+		}
+
+		resp, err := client.GetSafeMember(context.Background(), safe)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("InvalidJSONResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			rw.Write([]byte(`invalid json`))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		safe := cyberark.SafeData{
+			Name:  &name,
+			Owner: &owner,
+		}
+
+		resp, err := client.GetSafeMember(context.Background(), safe)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
 	})
 }
 
@@ -769,7 +891,17 @@ func TestUpdateSafeMember(t *testing.T) {
 				assert.Equal(t, "PUT", req.Method)
 				assert.Equal(t, fmt.Sprintf("/PasswordVault/API/Safes/%s/Members/%s", name, owner), req.URL.Path)
 
+				body, _ := io.ReadAll(req.Body)
+				req.Body.Close()
+				assert.NotEmpty(t, body)
+
+				// Return a proper Member object response
 				rw.WriteHeader(http.StatusOK)
+				resp := cyberark.Member{
+					Member:     &owner,
+					MemberType: &ownerType,
+				}
+				json.NewEncoder(rw).Encode(resp)
 			}))
 			defer server.Close()
 
@@ -782,9 +914,12 @@ func TestUpdateSafeMember(t *testing.T) {
 				Level:     &tc.level,
 			}
 
-			err := client.UpdateSafeMember(context.Background(), safe)
+			member, err := client.UpdateSafeMember(context.Background(), safe)
 
 			assert.NoError(t, err)
+			assert.NotNil(t, member)
+			assert.Equal(t, owner, *member.Member)
+			assert.Equal(t, ownerType, *member.MemberType)
 		})
 	}
 
@@ -803,9 +938,32 @@ func TestUpdateSafeMember(t *testing.T) {
 			Level:     &levelManager,
 		}
 
-		err := client.UpdateSafeMember(context.Background(), safe)
+		member, err := client.UpdateSafeMember(context.Background(), safe)
 
 		assert.Error(t, err)
+		assert.Nil(t, member)
+	})
+
+	t.Run("InvalidJSONResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(`invalid json`))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		safe := cyberark.SafeData{
+			Name:      &name,
+			Owner:     &owner,
+			OwnerType: &ownerType,
+			Level:     &levelManager,
+		}
+
+		member, err := client.UpdateSafeMember(context.Background(), safe)
+
+		assert.Error(t, err)
+		assert.Nil(t, member)
 	})
 }
 
