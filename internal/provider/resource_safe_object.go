@@ -177,14 +177,14 @@ func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		tflog.Info(ctx, "Safe not found, creating new")
 		safe, err = r.api.PamAPI.AddSafe(ctx, newSafe)
 		if err != nil {
-			resp.Diagnostics.AddError("Error creating Safe", fmt.Sprintf("Error onboarding new Safe: (%+v)", err))
+			resp.Diagnostics.AddError("Error creating safe", err.Error())
 			return
 		}
 	}
 
 	_, err = r.api.PamAPI.AddSafeMember(ctx, newSafe)
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating Safe Member", fmt.Sprintf("Error adding member to the Safe: (%+v)", err))
+		resp.Diagnostics.AddError("Error creating safe member", err.Error())
 		return
 	}
 
@@ -227,7 +227,7 @@ func (r *safeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	safe, err := r.api.PamAPI.GetSafe(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading Safe", fmt.Sprintf("Error reading Safe from API: (%+v)", err))
+		resp.Diagnostics.AddError("Error reading safe", err.Error())
 		return
 	}
 
@@ -288,8 +288,7 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// Call API to update the safe
 	safe, err := r.api.PamAPI.UpdateSafe(ctx, state.ID.ValueString(), updatedSafe)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating Safe",
-			fmt.Sprintf("Error while updating Safe: %+v", err))
+		resp.Diagnostics.AddError("Error updating safe", err.Error())
 		return
 	}
 
@@ -306,13 +305,11 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 		_, err = r.api.PamAPI.UpdateSafeMember(ctx, updatedSafe)
 		if err != nil {
-			resp.Diagnostics.AddError("Error updating Safe Member",
-				fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
+			resp.Diagnostics.AddError("Error updating safe member", err.Error())
 			return
 		}
 	} else {
-		resp.Diagnostics.AddWarning("Warning updating Safe Member",
-			"Safe Member not found in state, skipping update")
+		resp.Diagnostics.AddWarning("Warning updating safe member", "Safe member not found in state, skipping update")
 	}
 
 	data = safeResourceModel{
@@ -338,7 +335,6 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	tflog.Info(ctx, "Safe and Safe Member updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -356,26 +352,19 @@ func (r *safeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if !data.SeedMember.IsNull() && !data.SeedMType.IsNull() && !data.PermType.IsNull() {
 		err := r.api.PamAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddError("Error deleting Safe Member",
-				fmt.Sprintf("Error while deleting Safe Member: %+v", err))
+			resp.Diagnostics.AddError("Error deleting safe member", err.Error())
 			// Continue with safe deletion even if member deletion fails
-		} else {
-			tflog.Info(ctx, "Safe Member deleted successfully")
 		}
 	} else {
-		resp.Diagnostics.AddWarning("Warning deleting Safe Member",
-			"Safe Member not found in state, skipping deletion")
+		resp.Diagnostics.AddWarning("Warning deleting safe member", "Safe member not found in state, skipping deletion")
 	}
 
 	// Then delete the safe
 	err := r.api.PamAPI.DeleteSafe(ctx, data.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting Safe",
-			fmt.Sprintf("Error while deleting Safe: %+v", err))
+		resp.Diagnostics.AddError("Error deleting safe", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Safe deleted successfully")
 }
 
 func (r *safeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

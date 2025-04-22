@@ -470,47 +470,6 @@ func TestDeleteSecretStore(t *testing.T) {
 	})
 }
 
-func TestScanDefinition(t *testing.T) {
-	var (
-		input = cyberark.TriggerScanInputBody{
-			Scope: cyberark.ScanScope{
-				Scan: []string{"store_id"},
-			},
-		}
-		body = cyberark.TriggerScanOutput{
-			ScanIDs: []string{"scan_store_id"},
-		}
-	)
-
-	t.Run("ScanDefinition", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, "application/x.secretshub.beta+json", req.Header.Get("Accept"))
-			json.NewEncoder(rw).Encode(body)
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		resp, err := client.ScanDefinition(context.Background(), input)
-
-		assert.NoError(t, err)
-		assert.Equal(t, body, resp)
-	})
-
-	t.Run("ErrorStatusCode", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		resp, err := client.ScanDefinition(context.Background(), input)
-		assert.Empty(t, resp)
-		assert.Error(t, err)
-	})
-}
-
 func TestAddSyncPolicy(t *testing.T) {
 	var (
 		policy   = "test_policy"

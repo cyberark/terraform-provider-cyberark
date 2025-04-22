@@ -176,8 +176,7 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 
 	stores, err := r.api.SecretsHubAPI.GetAzureAkvSecretStores(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret stores",
-			fmt.Sprintf("Error while reading secret stores: %+v", err))
+		resp.Diagnostics.AddError("Error reading secret stores", err.Error())
 		return
 	}
 
@@ -196,12 +195,9 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 
 	output, err := r.api.SecretsHubAPI.AddAzureAkvSecretStore(ctx, newStore)
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating secret store",
-			fmt.Sprintf("Error while creating secret store: %+v", err))
+		resp.Diagnostics.AddError("Error creating secret store", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Secret Store created successfully")
 
 	data.ID = types.StringValue(output.ID)
 	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
@@ -222,8 +218,7 @@ func (r *azureSecretStoreResource) Read(ctx context.Context, req resource.ReadRe
 
 	output, err := r.api.SecretsHubAPI.GetAzureAkvSecretStore(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret store",
-			fmt.Sprintf("Error while reading secret store: %+v", err))
+		resp.Diagnostics.AddError("Error reading secret store", err.Error())
 		return
 	}
 
@@ -280,15 +275,13 @@ func (r *azureSecretStoreResource) Update(ctx context.Context, req resource.Upda
 
 	output, err := r.api.SecretsHubAPI.UpdateAzureAkvSecretStore(ctx, state.ID.ValueString(), updatedStore)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating secret store",
-			fmt.Sprintf("Error while updating secret store: %+v", err))
+		resp.Diagnostics.AddError("Error updating secret store", err.Error())
 		return
 	}
 
 	data.ID = types.StringValue(output.ID)
 	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
 
-	tflog.Info(ctx, "Azure Secret Store updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -304,12 +297,9 @@ func (r *azureSecretStoreResource) Delete(ctx context.Context, req resource.Dele
 
 	err := r.api.SecretsHubAPI.DeleteSecretStore(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting Azure secret store",
-			fmt.Sprintf("Error while deleting secret store: %+v", err))
+		resp.Diagnostics.AddError("Error deleting secret store", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("Azure Secret Store %s deleted successfully", state.ID.ValueString()))
 }
 
 func (r *azureSecretStoreResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

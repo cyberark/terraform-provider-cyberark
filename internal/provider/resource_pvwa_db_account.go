@@ -168,7 +168,7 @@ func (r *pvwaDBAccountResource) Create(ctx context.Context, req resource.CreateR
 			fmt.Sprintf("safeName eq %s", data.Safe.ValueString()),
 		})
 	if err != nil {
-		resp.Diagnostics.AddError("Error searching for account", fmt.Sprintf("Error searching for account: %+v", err))
+		resp.Diagnostics.AddError("Error searching for account", err.Error())
 		return
 	}
 
@@ -185,7 +185,7 @@ func (r *pvwaDBAccountResource) Create(ctx context.Context, req resource.CreateR
 		tflog.Info(ctx, "Account not found, creating new")
 		account, err = r.api.PVWAAPI.AddAccount(ctx, newAccount)
 		if err != nil {
-			resp.Diagnostics.AddError("Error creating account", fmt.Sprintf("Error creating account: %+v", err))
+			resp.Diagnostics.AddError("Error creating account", err.Error())
 			return
 		}
 	} else {
@@ -219,7 +219,7 @@ func (r *pvwaDBAccountResource) Read(ctx context.Context, req resource.ReadReque
 
 	newState, err := r.api.PVWAAPI.GetAccount(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading account", fmt.Sprintf("Error reading account: (%+v)", err))
+		resp.Diagnostics.AddError("Error reading account", err.Error())
 		return
 	}
 
@@ -286,8 +286,7 @@ func (r *pvwaDBAccountResource) Update(ctx context.Context, req resource.UpdateR
 
 	account, err := r.api.PVWAAPI.UpdateAccount(ctx, state.ID.ValueString(), updatedAccount)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating account",
-			fmt.Sprintf("Error while updating account: %+v", err))
+		resp.Diagnostics.AddError("Error updating account", err.Error())
 		return
 	}
 
@@ -302,7 +301,6 @@ func (r *pvwaDBAccountResource) Update(ctx context.Context, req resource.UpdateR
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	tflog.Info(ctx, "Database Account updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -318,12 +316,9 @@ func (r *pvwaDBAccountResource) Delete(ctx context.Context, req resource.DeleteR
 
 	err := r.api.PVWAAPI.DeleteAccount(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting account",
-			fmt.Sprintf("Error while deleting account: %+v", err))
+		resp.Diagnostics.AddError("Error deleting account", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Database Account deleted successfully")
 }
 
 // ImportState imports an existing resource into Terraform.

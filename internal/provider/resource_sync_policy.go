@@ -170,7 +170,7 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 
 	policies, err := r.api.SecretsHubAPI.GetSyncPolicies(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read policies", fmt.Sprintf("Failed to read policies: %+v", err))
+		resp.Diagnostics.AddError("Error reading sync policies", err.Error())
 		return
 	}
 
@@ -184,10 +184,10 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	if policy == nil {
-		tflog.Info(ctx, "Sync Policy not found, creating new")
+		tflog.Info(ctx, "Sync policy not found, creating new")
 		policy, err = r.api.SecretsHubAPI.AddSyncPolicy(ctx, newPolicy)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to create policy", fmt.Sprintf("Failed to create policy: %+v", err))
+			resp.Diagnostics.AddError("Error creating sync policy", err.Error())
 			return
 		}
 	}
@@ -211,13 +211,13 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	policy, err := r.api.SecretsHubAPI.GetSyncPolicy(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read policy", fmt.Sprintf("Failed to read policy: %+v", err))
+		resp.Diagnostics.AddError("Error reading sync policy", err.Error())
 		return
 	}
 
 	store, err := r.api.SecretsHubAPI.GetSecretFilter(ctx, policy.Source.SourceID, *policy.Filter.ID)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read store ", fmt.Sprintf("Failed to read store: %+v", err))
+		resp.Diagnostics.AddError("Error reading secret filter", err.Error())
 		return
 	}
 
@@ -272,8 +272,7 @@ func (r *syncPolicyResource) Update(ctx context.Context, req resource.UpdateRequ
 	// Call API to update (delete and recreate) the policy
 	policy, err := r.api.SecretsHubAPI.UpdateSyncPolicy(ctx, state.ID.ValueString(), updatePolicy)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to update sync policy",
-			fmt.Sprintf("Failed to update sync policy: %+v", err))
+		resp.Diagnostics.AddError("Error updating sync policy", err.Error())
 		return
 	}
 
@@ -281,7 +280,6 @@ func (r *syncPolicyResource) Update(ctx context.Context, req resource.UpdateRequ
 	data.ID = types.StringPointerValue(policy.ID)
 	data.LastUpdated = types.StringPointerValue(policy.UpdatedAt)
 
-	tflog.Info(ctx, "Sync Policy updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -291,7 +289,6 @@ func (r *syncPolicyResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -299,12 +296,9 @@ func (r *syncPolicyResource) Delete(ctx context.Context, req resource.DeleteRequ
 	// Call the API to delete the policy
 	err := r.api.SecretsHubAPI.DeleteSyncPolicy(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete sync policy",
-			fmt.Sprintf("Failed to delete sync policy: %+v", err))
+		resp.Diagnostics.AddError("Error deleting sync policy", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Sync Policy deleted successfully")
 }
 
 func (r *syncPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

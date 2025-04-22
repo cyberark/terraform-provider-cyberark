@@ -18,15 +18,9 @@ type SecretStore interface {
 	GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AzureAkvData], error)
 	GetAwsAsmSecretStores(ctx context.Context) (*SecretStoresOutput[AwsAsmData], error)
 	GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error)
-	UpdateSecretStore(ctx context.Context)
 	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
 	DeleteSecretStore(ctx context.Context, storeID string) error
-}
-
-// ScanSecretStore is an interface for interacting with SecretsHub's secret store scans.
-type ScanSecretStore interface {
-	ScanDefinition(ctx context.Context, details TriggerScanInputBody) (TriggerScanOutput, error)
 }
 
 // SyncPolicy is an interface for interacting with SecretsHub's sync policies.
@@ -42,7 +36,6 @@ type SyncPolicy interface {
 // SecretsHubAPI is an interface for interacting with the SecretsHub APIs.
 type SecretsHubAPI interface {
 	SecretStore
-	ScanSecretStore
 	SyncPolicy
 }
 
@@ -59,9 +52,7 @@ func (a *secretsHubAPI) AddAwsAsmSecretStore(ctx context.Context, body SecretSto
 	if err != nil {
 		return nil, err
 	}
-	if len(output.ID) == 0 {
-		return nil, fmt.Errorf("failed to get secret store ID")
-	}
+
 	return &output, nil
 }
 
@@ -72,9 +63,7 @@ func (a *secretsHubAPI) AddAzureAkvSecretStore(ctx context.Context, body SecretS
 	if err != nil {
 		return nil, err
 	}
-	if len(output.ID) == 0 {
-		return nil, fmt.Errorf("failed to get secret store ID")
-	}
+
 	return &output, nil
 }
 
@@ -83,6 +72,7 @@ func (a *secretsHubAPI) addSecretStore(ctx context.Context, body interface{}, ou
 	if err != nil {
 		return err
 	}
+
 	response, err := a.client.DoRequest(
 		ctx,
 		"POST",
@@ -95,16 +85,15 @@ func (a *secretsHubAPI) addSecretStore(ctx context.Context, body interface{}, ou
 		return err
 	}
 
-	if response.StatusCode == 409 {
-		return fmt.Errorf("secret store already exists")
-	} else if response.StatusCode != 201 {
-		return fmt.Errorf("failed to add secret store, expected status code 201, got %d", response.StatusCode)
+	if response.StatusCode != 201 {
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	err = json.NewDecoder(response.Body).Decode(output)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -115,9 +104,7 @@ func (a *secretsHubAPI) GetAwsAsmSecretStore(ctx context.Context, storeID string
 	if err != nil {
 		return nil, err
 	}
-	if output.Data == nil {
-		return nil, fmt.Errorf("secret store data is empty: %+v", output)
-	}
+
 	return &output, nil
 }
 
@@ -128,9 +115,7 @@ func (a *secretsHubAPI) GetAzureAkvSecretStore(ctx context.Context, storeID stri
 	if err != nil {
 		return nil, err
 	}
-	if output.Data == nil {
-		return nil, fmt.Errorf("secret store data is empty: %+v", output)
-	}
+
 	return &output, nil
 }
 
@@ -148,8 +133,9 @@ func (a *secretsHubAPI) getSecretStore(ctx context.Context, storeID string, outp
 	}
 
 	if response.StatusCode != 200 {
-		return fmt.Errorf("failed to get secret store, expected status code 200, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
+
 	err = json.NewDecoder(response.Body).Decode(output)
 	if err != nil {
 		return err
@@ -160,20 +146,24 @@ func (a *secretsHubAPI) getSecretStore(ctx context.Context, storeID string, outp
 // GetAwsAsmSecretStores retrieves all AWS ASM secret stores from the SecretsHub.
 func (a *secretsHubAPI) GetAwsAsmSecretStores(ctx context.Context) (*SecretStoresOutput[AwsAsmData], error) {
 	var output SecretStoresOutput[AwsAsmData]
+
 	err := a.getSecretStores(ctx, "AWS_ASM", &output)
 	if err != nil {
 		return nil, err
 	}
+
 	return &output, nil
 }
 
 // GetAzureAkvSecretStores retrieves all Azure AKS secret stores from the SecretsHub.
 func (a *secretsHubAPI) GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error) {
 	var output SecretStoresOutput[AzureAkvData]
+
 	err := a.getSecretStores(ctx, "AZURE_AKV", &output)
 	if err != nil {
 		return nil, err
 	}
+
 	return &output, nil
 }
 
@@ -181,6 +171,7 @@ func (a *secretsHubAPI) getSecretStores(ctx context.Context, storeType string, o
 	params := map[string]string{
 		"filter": fmt.Sprintf("type EQ %s", storeType),
 	}
+
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
@@ -194,34 +185,38 @@ func (a *secretsHubAPI) getSecretStores(ctx context.Context, storeType string, o
 	}
 
 	if response.StatusCode != 200 {
-		return fmt.Errorf("failed to get secret stores, expected status code 200, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	err = json.NewDecoder(response.Body).Decode(output)
 	if err != nil {
 		return err
 	}
-	return nil
 
+	return nil
 }
 
 // UpdateSecretStore updates a secret store in the SecretsHub.
 func (a *secretsHubAPI) UpdateAwsSecretStore(ctx context.Context, storeId string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error) {
 	var output SecretStoreOutput[AwsAsmData]
+
 	err := a.updateSecretStore(ctx, storeId, body, &output)
 	if err != nil {
 		return nil, err
 	}
+
 	return &output, nil
 }
 
 // UpdateAzureAkvSecretStore updates an Azure AKV secret store in the SecretsHub.
 func (a *secretsHubAPI) UpdateAzureAkvSecretStore(ctx context.Context, storeId string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error) {
 	var output SecretStoreOutput[AzureAkvData]
+
 	err := a.updateSecretStore(ctx, storeId, body, &output)
 	if err != nil {
 		return nil, err
 	}
+
 	return &output, nil
 }
 
@@ -244,20 +239,15 @@ func (a *secretsHubAPI) updateSecretStore(ctx context.Context, storeId string, b
 	}
 
 	if response.StatusCode != 200 {
-		tflog.Error(ctx, fmt.Sprintf("failed to update secret store, got response: %s", response.Body))
-		return fmt.Errorf("failed to update secret store, expected status code 200, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
-	defer response.Body.Close()
-	decoder := json.NewDecoder(response.Body)
-	if err := decoder.Decode(output); err != nil {
-		return fmt.Errorf("failed to decode response: %w", err)
+	err = json.NewDecoder(response.Body).Decode(output)
+	if err != nil {
+		return err
 	}
+
 	return nil
-}
-
-// DeleteSecretStore deletes a secret store from the SecretsHub.
-func (a *secretsHubAPI) UpdateSecretStore(_ context.Context) {
 }
 
 // DeleteSecretStore deletes a secret store from the SecretsHub.
@@ -275,47 +265,10 @@ func (a *secretsHubAPI) DeleteSecretStore(ctx context.Context, storeId string) e
 	}
 
 	if response.StatusCode != 204 {
-		tflog.Error(ctx, fmt.Sprintf("failed to delete secret store, got response: %s", response.Body))
-		return fmt.Errorf("failed to delete secret store, expected status code 204, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
+
 	return nil
-}
-
-// ScanDefinition triggers a scan for a secret store in the SecretsHub.
-func (a *secretsHubAPI) ScanDefinition(ctx context.Context, details TriggerScanInputBody) (TriggerScanOutput, error) {
-	body, err := json.Marshal(details)
-	if err != nil {
-		return TriggerScanOutput{}, err
-	}
-	// This REST APIs is a Beta version.
-	headers := map[string]string{
-		"Accept": "application/x.secretshub.beta+json",
-	}
-
-	response, err := a.client.DoRequest(
-		ctx,
-		"POST",
-		"/api/scan-definitions/secret-store/default/scan",
-		bytes.NewBuffer(body),
-		headers,
-		map[string]string{},
-	)
-	if err != nil {
-		return TriggerScanOutput{}, err
-	}
-
-	// Doc shows that the response code can be 200 but API returns 202 so securing the other case.
-	if response.StatusCode != 200 && response.StatusCode != 202 {
-		return TriggerScanOutput{}, fmt.Errorf("failed to trigger scan, expected status code 200/202, got %d", response.StatusCode)
-	}
-
-	output := TriggerScanOutput{}
-	err = json.NewDecoder(response.Body).Decode(&output)
-	if err != nil {
-		return TriggerScanOutput{}, err
-	}
-
-	return output, nil
 }
 
 // AddSyncPolicy adds a new sync policy to the SecretsHub.
@@ -337,12 +290,8 @@ func (a *secretsHubAPI) AddSyncPolicy(ctx context.Context, pi PolicyInput) (*Pol
 		return nil, err
 	}
 
-	if response.StatusCode == 409 {
-		tflog.Info(ctx, fmt.Sprintf("Sync policy [%s] already exists.", *pi.Name))
-		return nil, nil
-	} else if response.StatusCode != 201 {
-		tflog.Error(ctx, fmt.Sprintf("failed to add sync policy, got response: %s", response.Body))
-		return nil, fmt.Errorf("failed to add sync policy, expected status code 201, got %d", response.StatusCode)
+	if response.StatusCode != 201 {
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	output := PolicyExternalOutput{}
@@ -351,16 +300,15 @@ func (a *secretsHubAPI) AddSyncPolicy(ctx context.Context, pi PolicyInput) (*Pol
 		return nil, err
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Sync policy created with ID: %s", *output.ID))
-
 	return &output, nil
 }
 
-// GetSyncPolicy retrieves a sync policy from the SecretsHub.
+// GetSyncPolicy retrieves a sync policy from SecretsHub.
 func (a *secretsHubAPI) GetSyncPolicy(ctx context.Context, policyID string) (*PolicyExternalOutput, error) {
 	params := map[string]string{
 		"projection": "REGULAR",
 	}
+
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
@@ -374,7 +322,7 @@ func (a *secretsHubAPI) GetSyncPolicy(ctx context.Context, policyID string) (*Po
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get sync policy, expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	output := PolicyExternalOutput{}
@@ -391,6 +339,7 @@ func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, err
 	params := map[string]string{
 		"projection": "REGULAR",
 	}
+
 	response, err := a.client.DoRequest(
 		ctx,
 		"GET",
@@ -404,7 +353,7 @@ func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, err
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get sync policies, expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	output := SyncResponse{}
@@ -430,7 +379,6 @@ func (a *secretsHubAPI) UpdateSyncPolicy(ctx context.Context, policyID string, p
 		return nil, fmt.Errorf("failed to create new policy during update: %w", err)
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Sync policy with ID %s updated successfully", *output.ID))
 	return output, nil
 }
 
@@ -474,11 +422,9 @@ func (a *secretsHubAPI) DeleteSyncPolicy(ctx context.Context, policyID string) e
 	}
 
 	if response.StatusCode != 200 {
-		tflog.Error(ctx, fmt.Sprintf("failed to delete sync policy, got response: %s", response.Body))
-		return fmt.Errorf("failed to delete sync policy, expected status code 204, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Sync policy with ID %s deleted successfully", policyID))
 	return nil
 }
 
@@ -505,7 +451,7 @@ func (a *secretsHubAPI) GetSecretFilter(ctx context.Context, storeID string, fil
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get safe name, expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	output := SecretFilterOutput{}
