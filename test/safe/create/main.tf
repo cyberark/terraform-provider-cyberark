@@ -51,8 +51,6 @@ resource "cyberark_safe" "test_safe" {
   member           = "secretshub"
   member_type      = "user"
   permission_level = "full"
-  retention        = 7
-  purge            = false
 }
 
 # Save the ID for later use in other stages

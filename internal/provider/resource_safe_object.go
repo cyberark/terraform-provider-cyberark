@@ -107,6 +107,7 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"retention": schema.Int64Attribute{
 				Description: "The number of retained versions of every password that is stored in the Safe.",
+				Computed:    true,
 				Optional:    true,
 			},
 			"retention_versions": schema.Int64Attribute{
@@ -115,6 +116,7 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 			},
 			"purge": schema.BoolAttribute{
 				Description: "Whether or not to automatically purge files after the end of the Object History Retention Period defined in the Safe properties.",
+				Computed:    true,
 				Optional:    true,
 			},
 		},
