@@ -227,6 +227,19 @@ func generateAccountPatch(existing *CredentialResponse, desired *Credential) ([]
 			"path":  "/address",
 			"value": *desired.Address,
 		})
+	} else if desired.Address != nil && existing.Address == nil {
+		// If existing has no address but desired does, add it
+		patch = append(patch, map[string]interface{}{
+			"op":    "add",
+			"path":  "/address",
+			"value": *desired.Address,
+		})
+	} else if desired.Address == nil && existing.Address != nil {
+		// If existing has an address but desired does not, remove it
+		patch = append(patch, map[string]interface{}{
+			"op":   "remove",
+			"path": "/address",
+		})
 	}
 
 	if desired.UserName != nil && existing.UserName != nil && *existing.UserName != *desired.UserName {
