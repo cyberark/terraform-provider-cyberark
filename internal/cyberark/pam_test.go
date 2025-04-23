@@ -79,7 +79,8 @@ func TestAddAccount(t *testing.T) {
 		resp, err := client.AddAccount(context.Background(), credentials)
 
 		assert.Empty(t, resp)
-		assert.NoError(t, err)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "HTTP status code 409")
 	})
 
 	t.Run("ErrorStatusCode", func(t *testing.T) {
@@ -293,17 +294,24 @@ func TestUpdateAccount(t *testing.T) {
 		patchAccountCalled := false
 
 		updatedAddress := "updated_address"
+		automaticManagementTrue := true
+		updatedManagementReason := "Updated reason"
 
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// First the function will call GetAccount
 			if req.Method == "GET" && strings.Contains(req.URL.Path, credID) {
 				getAccountCalled = true
-				// Return existing account
+				// Return existing account with some values to be updated
 				existingAccount := cyberark.CredentialResponse{
 					CredID:   &credID,
 					UserName: &name,
 					Name:     &name,
 					// Existing account without address field
+					// And with different secret management properties
+					SecretMgmt: &cyberark.SecretManagement{
+						AutomaticManagement:    new(bool),   // false
+						ManualManagementReason: new(string), // empty
+					},
 				}
 				json.NewEncoder(rw).Encode(existingAccount)
 				return
@@ -318,8 +326,18 @@ func TestUpdateAccount(t *testing.T) {
 
 				// Verify JSON patch format contains expected operations
 				assert.Contains(t, string(body), `"op":"replace"`)
+
+				// Verify address update
 				assert.Contains(t, string(body), `"path":"/address"`)
 				assert.Contains(t, string(body), `"value":"updated_address"`)
+
+				// Verify automatic management update
+				assert.Contains(t, string(body), `"path":"/secretManagement/automaticManagementEnabled"`)
+				assert.Contains(t, string(body), `"value":true`)
+
+				// Verify management reason update
+				assert.Contains(t, string(body), `"path":"/secretManagement/manualManagementReason"`)
+				assert.Contains(t, string(body), `"value":"Updated reason"`)
 
 				rw.WriteHeader(http.StatusOK)
 				resp := cyberark.CredentialResponse{
@@ -327,6 +345,11 @@ func TestUpdateAccount(t *testing.T) {
 					UserName: &name,
 					Name:     &name,
 					Address:  &updatedAddress,
+					SecretMgmt: &cyberark.SecretManagement{
+						AutomaticManagement:    &automaticManagementTrue,
+						ManualManagementReason: &updatedManagementReason,
+						ModifiedTime:           new(int64), // Added a modified time
+					},
 				}
 				json.NewEncoder(rw).Encode(resp)
 				return
@@ -343,6 +366,10 @@ func TestUpdateAccount(t *testing.T) {
 		credentials := cyberark.Credential{
 			Name:    &name,
 			Address: &updatedAddress,
+			SecretMgmt: &cyberark.SecretManagement{
+				AutomaticManagement:    &automaticManagementTrue,
+				ManualManagementReason: &updatedManagementReason,
+			},
 		}
 
 		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
@@ -356,9 +383,69 @@ func TestUpdateAccount(t *testing.T) {
 			UserName: &name,
 			Name:     &name,
 			Address:  &updatedAddress,
+			SecretMgmt: &cyberark.SecretManagement{
+				AutomaticManagement:    &automaticManagementTrue,
+				ManualManagementReason: &updatedManagementReason,
+				ModifiedTime:           new(int64),
+			},
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, expectedData, *resp)
+	})
+
+	t.Run("NoChanges", func(t *testing.T) {
+		// Track if GetAccount is called but ensure PATCH is not called
+		getAccountCalled := false
+		patchAccountCalled := false
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			// First the function will call GetAccount
+			if req.Method == "GET" && strings.Contains(req.URL.Path, credID) {
+				getAccountCalled = true
+				// Return existing account with same values as what we'll request
+				existingAccount := cyberark.CredentialResponse{
+					CredID:   &credID,
+					UserName: &name,
+					Name:     &name,
+					Address:  &name, // Same value we'll use in the update request
+				}
+				json.NewEncoder(rw).Encode(existingAccount)
+				return
+			}
+
+			// If PATCH is called (which it shouldn't be), mark it
+			if req.Method == "PATCH" && strings.Contains(req.URL.Path, credID) {
+				patchAccountCalled = true
+				// This shouldn't be reached, but handle it anyway
+				rw.WriteHeader(http.StatusOK)
+				json.NewEncoder(rw).Encode(cyberark.CredentialResponse{})
+				return
+			}
+
+			// Unexpected request
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte("Unexpected request"))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewPAMAPI(server.URL, token, true)
+
+		credentials := cyberark.Credential{
+			Name:    &name,
+			Address: &name, // Same value as in the existing account
+		}
+
+		resp, err := client.UpdateAccount(context.Background(), credID, credentials)
+
+		// Verify GetAccount was called but PATCH was not
+		assert.True(t, getAccountCalled, "GetAccount should have been called")
+		assert.False(t, patchAccountCalled, "PATCH request should not have been made when no changes detected")
+
+		// Should return the existing account with no error
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, credID, *resp.CredID)
+		assert.Equal(t, name, *resp.Name)
 	})
 
 	t.Run("ErrorStatusCode", func(t *testing.T) {
@@ -502,7 +589,8 @@ func TestAddSafe(t *testing.T) {
 		resp, err := client.AddSafe(context.Background(), safe)
 
 		assert.Empty(t, resp)
-		assert.NoError(t, err)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "HTTP status code 409")
 	})
 
 	t.Run("InvalidJSONResponse", func(t *testing.T) {
@@ -779,8 +867,9 @@ func TestAddSafeMember(t *testing.T) {
 
 		member, err := client.AddSafeMember(context.Background(), safe)
 
-		assert.NoError(t, err)
 		assert.Nil(t, member) // Should be nil when member already exists
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "HTTP status code 409")
 	})
 
 	t.Run("InvalidJSONResponse", func(t *testing.T) {
@@ -998,7 +1087,8 @@ func TestDeleteSafeMember(t *testing.T) {
 		client := cyberark.NewPAMAPI(server.URL, token, true)
 		err := client.DeleteSafeMember(context.Background(), safeName, memberName)
 
-		assert.NoError(t, err) // Should return nil for 404 response
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "HTTP status code 404")
 	})
 
 	t.Run("ErrorStatusCode", func(t *testing.T) {

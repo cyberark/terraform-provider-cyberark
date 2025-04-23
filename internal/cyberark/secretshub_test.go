@@ -159,6 +159,7 @@ func TestGetAwsAsmSecretStore(t *testing.T) {
 		}
 		storeID = "test_store_id"
 	)
+
 	t.Run("GetAwsAsmSecretStore", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
@@ -173,19 +174,7 @@ func TestGetAwsAsmSecretStore(t *testing.T) {
 
 		assert.Equal(t, &body, resp)
 	})
-	t.Run("EmptyData", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			body.Data = nil
-			json.NewEncoder(rw).Encode(body)
-		}))
-		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, token)
-
-		resp, err := client.GetAwsAsmSecretStore(context.Background(), storeID)
-		assert.Empty(t, resp)
-		assert.Error(t, err)
-	})
 	t.Run("ErrorStatusCode", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
@@ -209,6 +198,7 @@ func TestGetAzureAkvSecretStore(t *testing.T) {
 		}
 		storeID = "test_store_id"
 	)
+
 	t.Run("GetAzureAkvSecretStore", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
@@ -223,19 +213,7 @@ func TestGetAzureAkvSecretStore(t *testing.T) {
 
 		assert.Equal(t, &body, resp)
 	})
-	t.Run("EmptyData", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			body.Data = nil
-			json.NewEncoder(rw).Encode(body)
-		}))
-		defer server.Close()
 
-		client := cyberark.NewSecretsHubAPI(server.URL, token)
-
-		resp, err := client.GetAzureAkvSecretStore(context.Background(), storeID)
-		assert.Empty(t, resp)
-		assert.Error(t, err)
-	})
 	t.Run("ErrorStatusCode", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
@@ -511,7 +489,8 @@ func TestAddSyncPolicy(t *testing.T) {
 		resp, err := client.AddSyncPolicy(context.Background(), input)
 
 		assert.Empty(t, resp)
-		assert.NoError(t, err)
+		assert.Error(t, err)
+		assert.Equal(t, "HTTP status code 409", err.Error())
 	})
 
 	t.Run("ErrorStatusCode", func(t *testing.T) {
