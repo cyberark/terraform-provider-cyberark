@@ -294,7 +294,7 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	if !state.SeedMember.IsNull() && !state.SeedMType.IsNull() && !state.PermType.IsNull() {
+	if !data.SeedMember.IsNull() && !data.SeedMType.IsNull() && !data.PermType.IsNull() {
 		// Validate permission level
 		switch data.PermType.ValueString() {
 		case "full", "read", "approver", "manager":
