@@ -54,12 +54,18 @@ func (c *Client) DoRequest(ctx context.Context, method string, path string, body
 
 	if c.logResponse {
 		responseBody, err := io.ReadAll(response.Body)
+
+		var url url.URL
+		if req.URL != nil {
+			url = *req.URL
+		}
+
 		if err == nil && len(responseBody) > 0 {
 			tflog.Debug(
 				ctx,
 				"Response from CyberArk API",
 				map[string]interface{}{
-					"request_url":     req.URL,
+					"request_url":     url.String(),
 					"method":          method,
 					"response_status": response.Status,
 					"response_body":   string(responseBody),
