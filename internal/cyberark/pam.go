@@ -70,11 +70,8 @@ func (a *pamAPI) AddAccount(ctx context.Context, credential Credential) (*Creden
 		return nil, err
 	}
 
-	if response.StatusCode == 409 {
-		tflog.Info(ctx, fmt.Sprintf("Account [%s] already exists.", *credential.Name))
-		return nil, nil
-	} else if response.StatusCode != 201 {
-		return nil, fmt.Errorf("failed to add account, expected status code 201, got %d", response.StatusCode)
+	if response.StatusCode != 201 {
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	createdAccount := CredentialResponse{}
@@ -82,9 +79,6 @@ func (a *pamAPI) AddAccount(ctx context.Context, credential Credential) (*Creden
 	if err != nil {
 		return nil, err
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("Successfully added new account [%s]: Name [%s] - ID [%v]",
-		*createdAccount.UserName, *createdAccount.Name, *createdAccount.CredID))
 
 	return &createdAccount, nil
 }
@@ -104,7 +98,7 @@ func (a *pamAPI) GetAccount(ctx context.Context, accountID string) (*CredentialR
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get account. Expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	account := CredentialResponse{}
@@ -133,7 +127,7 @@ func (a *pamAPI) FilterAccounts(ctx context.Context, search string, filter []str
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to filter accounts. Expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	searchAccounts := CredentialSearchResponse{}
@@ -198,8 +192,7 @@ func (a *pamAPI) UpdateAccount(ctx context.Context, accountID string, credential
 	}
 
 	if response.StatusCode != 200 {
-		tflog.Error(ctx, fmt.Sprintf("failed to update account, got response: %s", response.Body))
-		return nil, fmt.Errorf("failed to update account. Expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	updatedAccount := CredentialResponse{}
@@ -207,9 +200,6 @@ func (a *pamAPI) UpdateAccount(ctx context.Context, accountID string, credential
 	if err != nil {
 		return nil, err
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("Successfully updated account [%s]: Name [%s] - ID [%v]",
-		*updatedAccount.UserName, *updatedAccount.Name, *updatedAccount.CredID))
 
 	return &updatedAccount, nil
 }
@@ -236,6 +226,19 @@ func generateAccountPatch(existing *CredentialResponse, desired *Credential) ([]
 			"op":    "replace",
 			"path":  "/address",
 			"value": *desired.Address,
+		})
+	} else if desired.Address != nil && existing.Address == nil {
+		// If existing has no address but desired does, add it
+		patch = append(patch, map[string]interface{}{
+			"op":    "add",
+			"path":  "/address",
+			"value": *desired.Address,
+		})
+	} else if desired.Address == nil && existing.Address != nil {
+		// If existing has an address but desired does not, remove it
+		patch = append(patch, map[string]interface{}{
+			"op":   "remove",
+			"path": "/address",
 		})
 	}
 
@@ -332,11 +335,9 @@ func (a *pamAPI) DeleteAccount(ctx context.Context, accountID string) error {
 	}
 
 	if response.StatusCode != 204 {
-		tflog.Error(ctx, fmt.Sprintf("failed to delete account, got response: %s", response.Body))
-		return fmt.Errorf("failed to delete account. Expected status code 204, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Successfully deleted account with ID [%s]", accountID))
 	return nil
 }
 
@@ -359,11 +360,8 @@ func (a *pamAPI) AddSafe(ctx context.Context, safe SafeData) (*SafeData, error) 
 		return nil, err
 	}
 
-	if response.StatusCode == 409 {
-		tflog.Info(ctx, fmt.Sprintf("Safe [%s] already exists.", *safe.Name))
-		return nil, nil
-	} else if response.StatusCode != 201 {
-		return nil, fmt.Errorf("failed to add safe, expected status code 201, got %d", response.StatusCode)
+	if response.StatusCode != 201 {
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	savedSafe := SafeData{}
@@ -371,9 +369,6 @@ func (a *pamAPI) AddSafe(ctx context.Context, safe SafeData) (*SafeData, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("Successfully added new safe [%s]: Name [%s] - ID [%v]",
-		*savedSafe.Name, *savedSafe.URLID, *savedSafe.NUMBER))
 
 	return &savedSafe, nil
 }
@@ -393,7 +388,7 @@ func (a *pamAPI) GetSafe(ctx context.Context, safeID string) (*SafeData, error) 
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get safe. Expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	safe := SafeData{}
@@ -425,8 +420,7 @@ func (a *pamAPI) UpdateSafe(ctx context.Context, safeID string, safe SafeData) (
 	}
 
 	if response.StatusCode != 200 {
-		tflog.Error(ctx, fmt.Sprintf("failed to update safe, got response: %s", response.Body))
-		return nil, fmt.Errorf("failed to update safe. Expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	updatedSafe := SafeData{}
@@ -434,9 +428,6 @@ func (a *pamAPI) UpdateSafe(ctx context.Context, safeID string, safe SafeData) (
 	if err != nil {
 		return nil, err
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("Successfully updated safe [%s]: Name [%s] - ID [%v]",
-		*updatedSafe.Name, *updatedSafe.URLID, *updatedSafe.NUMBER))
 
 	return &updatedSafe, nil
 }
@@ -456,11 +447,9 @@ func (a *pamAPI) DeleteSafe(ctx context.Context, safeID string) error {
 	}
 
 	if response.StatusCode != 204 {
-		tflog.Error(ctx, fmt.Sprintf("failed to delete safe, got response: %s", response.Body))
-		return fmt.Errorf("failed to delete safe. Expected status code 204, got %d", response.StatusCode)
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Successfully deleted safe with ID [%s]", safeID))
 	return nil
 }
 
@@ -489,11 +478,8 @@ func (a *pamAPI) AddSafeMember(ctx context.Context, safe SafeData) (*Member, err
 		return nil, err
 	}
 
-	if response.StatusCode == 409 {
-		tflog.Info(ctx, fmt.Sprintf("Safe [%s] already has member [%s].", *safe.Name, *safe.Owner))
-		return nil, nil
-	} else if response.StatusCode != 201 {
-		return nil, fmt.Errorf("failed to add safe member, expected status code 201, got %d", response.StatusCode)
+	if response.StatusCode != 201 {
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	safeMember := Member{}
@@ -520,7 +506,7 @@ func (a *pamAPI) GetSafeMember(ctx context.Context, safe SafeData) (*Member, err
 	}
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get safe member. Expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
 	safeMember := Member{}
@@ -565,18 +551,14 @@ func (a *pamAPI) UpdateSafeMember(ctx context.Context, safe SafeData) (*Member, 
 	}
 
 	if response.StatusCode != 200 {
-		tflog.Error(ctx, fmt.Sprintf("failed to update safe member, got response: %s", response.Body))
-		return nil, fmt.Errorf("failed to update safe member, expected status code 200, got %d", response.StatusCode)
+		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Successfully updated member [%s] permissions in safe [%s]", *safe.Owner, *safe.Name))
 	return &updatedSafeMember, nil
 }
 
 // DeleteSafeMember deletes a safe member from the SecretsHub.
 func (a *pamAPI) DeleteSafeMember(ctx context.Context, safeName string, memberName string) error {
-	tflog.Debug(ctx, fmt.Sprintf("Attempting to delete member [%s] from safe [%s]", memberName, safeName))
-
 	response, err := a.client.DoRequest(
 		ctx,
 		"DELETE",
@@ -589,14 +571,10 @@ func (a *pamAPI) DeleteSafeMember(ctx context.Context, safeName string, memberNa
 		return err
 	}
 
-	if response.StatusCode == 404 {
-		tflog.Info(ctx, fmt.Sprintf("Member [%s] not found in safe [%s]", memberName, safeName))
-		return nil
-	} else if response.StatusCode != 204 {
-		return fmt.Errorf("failed to delete safe member, expected status code 204, got %d", response.StatusCode)
+	if response.StatusCode != 204 {
+		return APIErrorFromResponse(response.StatusCode, response.Body)
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("Successfully removed member [%s] from safe [%s]", memberName, safeName))
 	return nil
 }
 

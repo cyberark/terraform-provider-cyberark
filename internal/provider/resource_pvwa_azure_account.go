@@ -188,7 +188,7 @@ func (r *pvwaAzureAccountResource) Create(ctx context.Context, req resource.Crea
 			fmt.Sprintf("safeName eq %s", data.Safe.ValueString()),
 		})
 	if err != nil {
-		resp.Diagnostics.AddError("Error searching for account", fmt.Sprintf("Error searching for account: %+v", err))
+		resp.Diagnostics.AddError("Error searching for account", err.Error())
 		return
 	}
 
@@ -205,7 +205,7 @@ func (r *pvwaAzureAccountResource) Create(ctx context.Context, req resource.Crea
 		tflog.Info(ctx, "Account not found, creating new")
 		account, err = r.api.PVWAAPI.AddAccount(ctx, newAccount)
 		if err != nil {
-			resp.Diagnostics.AddError("Error creating account", fmt.Sprintf("Error creating account: %+v", err))
+			resp.Diagnostics.AddError("Error creating account", err.Error())
 			return
 		}
 	} else {
@@ -239,7 +239,7 @@ func (r *pvwaAzureAccountResource) Read(ctx context.Context, req resource.ReadRe
 
 	newState, err := r.api.PVWAAPI.GetAccount(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading account", fmt.Sprintf("Error reading account from API: %v", err))
+		resp.Diagnostics.AddError("Error reading account", err.Error())
 		return
 	}
 
@@ -314,8 +314,7 @@ func (r *pvwaAzureAccountResource) Update(ctx context.Context, req resource.Upda
 
 	account, err := r.api.PVWAAPI.UpdateAccount(ctx, state.ID.ValueString(), updatedAccount)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating account",
-			fmt.Sprintf("Error while updating account: %+v", err))
+		resp.Diagnostics.AddError("Error updating account", err.Error())
 		return
 	}
 
@@ -330,7 +329,6 @@ func (r *pvwaAzureAccountResource) Update(ctx context.Context, req resource.Upda
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	tflog.Info(ctx, "Azure Account updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -346,12 +344,9 @@ func (r *pvwaAzureAccountResource) Delete(ctx context.Context, req resource.Dele
 
 	err := r.api.PVWAAPI.DeleteAccount(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting account",
-			fmt.Sprintf("Error while deleting account: %+v", err))
+		resp.Diagnostics.AddError("Error deleting account", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("Azure Account %s deleted successfully", state.ID.ValueString()))
 }
 
 // ImportState imports an existing resource into Terraform.

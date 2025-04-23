@@ -182,14 +182,14 @@ func (r *pvwaSafeResource) Create(ctx context.Context, req resource.CreateReques
 		tflog.Info(ctx, "Safe not found, creating new")
 		safe, err = r.api.PVWAAPI.AddSafe(ctx, newSafe)
 		if err != nil {
-			resp.Diagnostics.AddError("Error creating Safe", fmt.Sprintf("Error onboarding new Safe: (%+v)", err))
+			resp.Diagnostics.AddError("Error creating safe", err.Error())
 			return
 		}
 	}
 
 	_, err = r.api.PVWAAPI.AddSafeMember(ctx, newSafe)
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating Safe Member", fmt.Sprintf("Error adding member to the Safe: (%+v)", err))
+		resp.Diagnostics.AddError("Error creating safe member", err.Error())
 		return
 	}
 
@@ -217,8 +217,6 @@ func (r *pvwaSafeResource) Create(ctx context.Context, req resource.CreateReques
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	tflog.Info(ctx, "Safe and Safe Member created successfully")
-
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -235,7 +233,7 @@ func (r *pvwaSafeResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	safe, err := r.api.PVWAAPI.GetSafe(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading Safe", fmt.Sprintf("Error reading Safe from API: (%+v)", err))
+		resp.Diagnostics.AddError("Error reading safe", err.Error())
 		return
 	}
 
@@ -298,8 +296,7 @@ func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateReques
 	// Call API to update the safe
 	safe, err := r.api.PVWAAPI.UpdateSafe(ctx, state.ID.ValueString(), updatedSafe)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating Safe",
-			fmt.Sprintf("Error while updating Safe: %+v", err))
+		resp.Diagnostics.AddError("Error updating safe", err.Error())
 		return
 	}
 
@@ -316,13 +313,11 @@ func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateReques
 
 		_, err = r.api.PamAPI.UpdateSafeMember(ctx, updatedSafe)
 		if err != nil {
-			resp.Diagnostics.AddError("Error updating Safe Member",
-				fmt.Sprintf("Error while updating Safe Member permissions: %+v", err))
+			resp.Diagnostics.AddError("Error updating safe member", err.Error())
 			return
 		}
 	} else {
-		resp.Diagnostics.AddWarning("Warning updating Safe Member",
-			"Safe Member not found in state, skipping update")
+		resp.Diagnostics.AddWarning("Warning updating safe member", "safe member not found in state, skipping update")
 	}
 
 	data = pvwaSafeResourceModel{
@@ -348,7 +343,6 @@ func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateReques
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	tflog.Info(ctx, "Safe and Safe Member updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -366,26 +360,20 @@ func (r *pvwaSafeResource) Delete(ctx context.Context, req resource.DeleteReques
 	if !data.SeedMember.IsNull() && !data.SeedMType.IsNull() && !data.PermType.IsNull() {
 		err := r.api.PamAPI.DeleteSafeMember(ctx, data.Name.ValueString(), data.SeedMember.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddError("Error deleting Safe Member",
-				fmt.Sprintf("Error while deleting Safe Member: %+v", err))
+			resp.Diagnostics.AddError("Error deleting safe member",
+				fmt.Sprintf("Error while deleting safe member: %+v", err))
 			// Continue with safe deletion even if member deletion fails
-		} else {
-			tflog.Info(ctx, "Safe Member deleted successfully")
 		}
 	} else {
-		resp.Diagnostics.AddWarning("Warning deleting Safe Member",
-			"Safe Member not found in state, skipping deletion")
+		resp.Diagnostics.AddWarning("Warning deleting safe member",
+			"Safe member not found in state, skipping deletion")
 	}
 
-	// Then delete the safe
 	err := r.api.PVWAAPI.DeleteSafe(ctx, data.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting Safe",
-			fmt.Sprintf("Error while deleting Safe: %+v", err))
+		resp.Diagnostics.AddError("Error deleting safe", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Safe deleted successfully")
 }
 
 func (r *pvwaSafeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

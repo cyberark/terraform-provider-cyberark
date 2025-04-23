@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-04-23
+
+### Fixed
+- Provide error messages from the API back to the user
+- Make `retention` and `purge` fields for safes `computed` so the API can provide default values if they are not user-provided
+- Safe resource update should look at safe members in the plan, not the existing state
+- Handle removing or adding the optional `address` property when updating an account
+- Fix crash when debug logging is enabled
+
 ## [0.3.0] - 2025-04-11
 
 ### Added

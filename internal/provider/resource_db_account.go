@@ -189,7 +189,7 @@ func (r *dbAccountResource) Create(ctx context.Context, req resource.CreateReque
 			fmt.Sprintf("safeName eq %s", data.Safe.ValueString()),
 		})
 	if err != nil {
-		resp.Diagnostics.AddError("Error searching for account", fmt.Sprintf("Error searching for account: %+v", err))
+		resp.Diagnostics.AddError("Error searching for account", err.Error())
 		return
 	}
 
@@ -206,7 +206,7 @@ func (r *dbAccountResource) Create(ctx context.Context, req resource.CreateReque
 		tflog.Info(ctx, "Account not found, creating new")
 		account, err = r.api.PamAPI.AddAccount(ctx, newAccount)
 		if err != nil {
-			resp.Diagnostics.AddError("Error creating account", fmt.Sprintf("Error creating account: %+v", err))
+			resp.Diagnostics.AddError("Error creating account", err.Error())
 			return
 		}
 	} else {
@@ -240,7 +240,7 @@ func (r *dbAccountResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	newState, err := r.api.PamAPI.GetAccount(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading account", fmt.Sprintf("Error reading account: (%+v)", err))
+		resp.Diagnostics.AddError("Error reading account", err.Error())
 		return
 	}
 
@@ -307,8 +307,7 @@ func (r *dbAccountResource) Update(ctx context.Context, req resource.UpdateReque
 
 	account, err := r.api.PamAPI.UpdateAccount(ctx, state.ID.ValueString(), updatedAccount)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating account",
-			fmt.Sprintf("Error while updating account: %+v", err))
+		resp.Diagnostics.AddError("Error updating account", err.Error())
 		return
 	}
 
@@ -323,7 +322,6 @@ func (r *dbAccountResource) Update(ctx context.Context, req resource.UpdateReque
 		data.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
 	}
 
-	tflog.Info(ctx, "Database Account updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -339,12 +337,9 @@ func (r *dbAccountResource) Delete(ctx context.Context, req resource.DeleteReque
 
 	err := r.api.PamAPI.DeleteAccount(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting account",
-			fmt.Sprintf("Error while deleting account: %+v", err))
+		resp.Diagnostics.AddError("Error deleting account", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Database Account deleted successfully")
 }
 
 func (r *dbAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -161,12 +161,9 @@ func (r *awsSecretStoreResource) Create(ctx context.Context, req resource.Create
 
 	output, err := r.api.SecretsHubAPI.AddAwsAsmSecretStore(ctx, newStore)
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating secret store",
-			fmt.Sprintf("Error while creating secret store: %+v", err))
+		resp.Diagnostics.AddError("Error creating secret store", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, "Secret Store created successfully")
 
 	data.ID = types.StringValue(output.ID)
 	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
@@ -187,8 +184,7 @@ func (r *awsSecretStoreResource) Read(ctx context.Context, req resource.ReadRequ
 
 	output, err := r.api.SecretsHubAPI.GetAwsAsmSecretStore(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret store",
-			fmt.Sprintf("Error while reading secret store: %+v", err))
+		resp.Diagnostics.AddError("Error reading secret store", err.Error())
 		return
 	}
 
@@ -234,15 +230,13 @@ func (r *awsSecretStoreResource) Update(ctx context.Context, req resource.Update
 
 	output, err := r.api.SecretsHubAPI.UpdateAwsSecretStore(ctx, state.ID.ValueString(), updatedStore)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating secret store",
-			fmt.Sprintf("Error while updating secret store: %+v", err))
+		resp.Diagnostics.AddError("Error updating secret store", err.Error())
 		return
 	}
 
 	data.ID = types.StringValue(output.ID)
 	data.LastUpdated = types.StringPointerValue(output.UpdatedAt)
 
-	tflog.Info(ctx, "AWS Secret Store updated successfully")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -257,12 +251,9 @@ func (r *awsSecretStoreResource) Delete(ctx context.Context, req resource.Delete
 
 	err := r.api.SecretsHubAPI.DeleteSecretStore(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting AWS secret store",
-			fmt.Sprintf("Error while deleting secret store: %+v", err))
+		resp.Diagnostics.AddError("Error deleting secret store", err.Error())
 		return
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("AWS Secret Store %s deleted successfully", state.ID.ValueString()))
 }
 
 // ImportState imports an existing AWS Secret Store resource into Terraform. It retrieves the resource from CyberArk SecretsHub using the provided ID,
