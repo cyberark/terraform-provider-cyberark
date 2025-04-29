@@ -224,20 +224,26 @@ func (r *pvwaDBAccountResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	data = dbCredModel{
-		Name:                    types.StringPointerValue(newState.Name),
-		Address:                 types.StringPointerValue(newState.Address),
-		Username:                types.StringPointerValue(newState.UserName),
-		Platform:                types.StringPointerValue(newState.Platform),
-		Safe:                    types.StringPointerValue(newState.SafeName),
-		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  data.Secret, // Secret is not returned by the API
-		ID:                      types.StringPointerValue(newState.CredID),
-		DBPort:                  types.StringPointerValue(newState.Props.Port),
-		DBName:                  types.StringPointerValue(newState.Props.DBName),
-		DBDSN:                   types.StringPointerValue(newState.Props.DSN),
-		SecretNameInSecretStore: types.StringPointerValue(newState.Props.SecretNameInSecretStore),
-		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
-		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
+		Name:       types.StringPointerValue(newState.Name),
+		Address:    types.StringPointerValue(newState.Address),
+		Username:   types.StringPointerValue(newState.UserName),
+		Platform:   types.StringPointerValue(newState.Platform),
+		Safe:       types.StringPointerValue(newState.SafeName),
+		SecretType: types.StringPointerValue(newState.SecretType),
+		Secret:     data.Secret, // Secret is not returned by the API
+		ID:         types.StringPointerValue(newState.CredID),
+	}
+
+	if newState.Props != nil {
+		data.DBPort = types.StringPointerValue(newState.Props.Port)
+		data.DBName = types.StringPointerValue(newState.Props.DBName)
+		data.DBDSN = types.StringPointerValue(newState.Props.DSN)
+		data.SecretNameInSecretStore = types.StringPointerValue(newState.Props.SecretNameInSecretStore)
+	}
+
+	if newState.SecretMgmt != nil {
+		data.Manage = types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement)
+		data.ManageReason = types.StringPointerValue(newState.SecretMgmt.ManualManagementReason)
 	}
 
 	// Set last updated time to last updated time in the vault

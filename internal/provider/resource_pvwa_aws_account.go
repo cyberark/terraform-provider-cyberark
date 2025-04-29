@@ -230,21 +230,27 @@ func (r *pvwaAWSAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	data = awsCredModel{
-		Name:                    types.StringPointerValue(newState.Name),
-		Address:                 types.StringPointerValue(newState.Address),
-		Username:                types.StringPointerValue(newState.UserName),
-		Platform:                types.StringPointerValue(newState.Platform),
-		Safe:                    types.StringPointerValue(newState.SafeName),
-		SecretType:              types.StringPointerValue(newState.SecretType),
-		ID:                      types.StringPointerValue(newState.CredID),
-		Secret:                  data.Secret, // Secret is not returned by the API
-		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
-		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
-		AWSKID:                  types.StringPointerValue(newState.Props.AWSKID),
-		AWSAccount:              types.StringPointerValue(newState.Props.AWSAccount),
-		Alias:                   types.StringPointerValue(newState.Props.Alias),
-		Region:                  types.StringPointerValue(newState.Props.Region),
-		SecretNameInSecretStore: types.StringPointerValue(newState.Props.SecretNameInSecretStore),
+		Name:       types.StringPointerValue(newState.Name),
+		Address:    types.StringPointerValue(newState.Address),
+		Username:   types.StringPointerValue(newState.UserName),
+		Platform:   types.StringPointerValue(newState.Platform),
+		Safe:       types.StringPointerValue(newState.SafeName),
+		SecretType: types.StringPointerValue(newState.SecretType),
+		ID:         types.StringPointerValue(newState.CredID),
+		Secret:     data.Secret, // Secret is not returned by the API
+	}
+
+	if newState.Props != nil {
+		data.AWSKID = types.StringPointerValue(newState.Props.AWSKID)
+		data.AWSAccount = types.StringPointerValue(newState.Props.AWSAccount)
+		data.Alias = types.StringPointerValue(newState.Props.Alias)
+		data.Region = types.StringPointerValue(newState.Props.Region)
+		data.SecretNameInSecretStore = types.StringPointerValue(newState.Props.SecretNameInSecretStore)
+	}
+
+	if newState.SecretMgmt != nil {
+		data.Manage = types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement)
+		data.ManageReason = types.StringPointerValue(newState.SecretMgmt.ManualManagementReason)
 	}
 
 	// Set last updated time to last updated time in the vault

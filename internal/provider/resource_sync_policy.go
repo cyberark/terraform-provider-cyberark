@@ -224,12 +224,21 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 	data = syncPolicyModel{
 		Name:        types.StringPointerValue(policy.Name),
 		Description: types.StringPointerValue(policy.Description),
-		SourceID:    types.StringValue(policy.Source.SourceID),
-		TargetID:    types.StringValue(policy.Target.TargetID),
 		Type:        types.StringPointerValue(store.Type),
-		SafeName:    types.StringPointerValue(store.Data.SafeName),
 		ID:          types.StringPointerValue(policy.ID),
 		LastUpdated: types.StringPointerValue(policy.UpdatedAt),
+	}
+
+	if policy.Source != nil {
+		data.SourceID = types.StringValue(policy.Source.SourceID)
+	}
+
+	if policy.Target != nil {
+		data.TargetID = types.StringValue(policy.Target.TargetID)
+	}
+
+	if store.Data != nil {
+		data.SafeName = types.StringPointerValue(store.Data.SafeName)
 	}
 
 	// Save updated data into Terraform state

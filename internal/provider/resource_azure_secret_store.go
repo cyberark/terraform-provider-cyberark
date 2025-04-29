@@ -223,20 +223,26 @@ func (r *azureSecretStoreResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	data = azureSecretStoreModel{
-		Name:                 types.StringPointerValue(output.Name),
-		Description:          types.StringPointerValue(output.Description),
-		Type:                 types.StringPointerValue(output.Type),
-		AppClientDirectoryID: types.StringPointerValue(output.Data.AppClientDirectoryID),
-		AzureVaultURL:        types.StringPointerValue(output.Data.AzureVaultURL),
-		AppClientID:          types.StringPointerValue(output.Data.AppClientID),
-		AppClientSecret:      types.StringPointerValue(output.Data.AppClientSecret),
-		ConnectionType:       types.StringPointerValue(output.Data.Connector.ConnectionType),
-		ConnectorID:          types.StringPointerValue(output.Data.Connector.ConnectorID),
-		SubscriptionID:       types.StringPointerValue(output.Data.SubscriptionID),
-		SubscriptionName:     types.StringPointerValue(output.Data.SubscriptionName),
-		ResourceGroupName:    types.StringPointerValue(output.Data.ResourceGroupName),
-		ID:                   types.StringValue(output.ID),
-		LastUpdated:          types.StringPointerValue(output.UpdatedAt),
+		Name:        types.StringPointerValue(output.Name),
+		Description: types.StringPointerValue(output.Description),
+		Type:        types.StringPointerValue(output.Type),
+		ID:          types.StringValue(output.ID),
+		LastUpdated: types.StringPointerValue(output.UpdatedAt),
+	}
+
+	if output.Data != nil {
+		data.AppClientDirectoryID = types.StringPointerValue(output.Data.AppClientDirectoryID)
+		data.AzureVaultURL = types.StringPointerValue(output.Data.AzureVaultURL)
+		data.AppClientID = types.StringPointerValue(output.Data.AppClientID)
+		data.AppClientSecret = types.StringPointerValue(output.Data.AppClientSecret)
+		data.SubscriptionID = types.StringPointerValue(output.Data.SubscriptionID)
+		data.SubscriptionName = types.StringPointerValue(output.Data.SubscriptionName)
+		data.ResourceGroupName = types.StringPointerValue(output.Data.ResourceGroupName)
+
+		if output.Data.Connector != nil {
+			data.ConnectionType = types.StringPointerValue(output.Data.Connector.ConnectionType)
+			data.ConnectorID = types.StringPointerValue(output.Data.Connector.ConnectorID)
+		}
 	}
 
 	// Save updated data into Terraform state
