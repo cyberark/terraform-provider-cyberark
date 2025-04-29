@@ -17,9 +17,10 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource                = &azureSecretStoreResource{}
-	_ resource.ResourceWithConfigure   = &azureSecretStoreResource{}
-	_ resource.ResourceWithImportState = &azureSecretStoreResource{}
+	_ resource.Resource                   = &azureSecretStoreResource{}
+	_ resource.ResourceWithConfigure      = &azureSecretStoreResource{}
+	_ resource.ResourceWithValidateConfig = &azureSecretStoreResource{}
+	_ resource.ResourceWithImportState    = &azureSecretStoreResource{}
 )
 
 // NewAzureSecretStoreResource is a helper function to simplify the provider implementation.
@@ -43,6 +44,7 @@ type azureSecretStoreModel struct {
 	AppClientSecret      types.String `tfsdk:"azure_app_client_secret"`
 	ConnectionType       types.String `tfsdk:"connection_type"`
 	ConnectorID          types.String `tfsdk:"connector_id"`
+	ConnectorPoolID      types.String `tfsdk:"connector_pool_id"`
 	SubscriptionID       types.String `tfsdk:"subscription_id"`
 	SubscriptionName     types.String `tfsdk:"subscription_name"`
 	ResourceGroupName    types.String `tfsdk:"resource_group_name"`
@@ -107,8 +109,12 @@ For more information click [here](https://docs.cyberark.com/secrets-hub-privileg
 				Required:    true,
 			},
 			"connector_id": schema.StringAttribute{
-				Description: "Azure ConnectorID.",
-				Required:    true,
+				Description: "Azure Connector ID.",
+				Optional:    true,
+			},
+			"connector_pool_id": schema.StringAttribute{
+				Description: "Azure Connector Pool ID.",
+				Optional:    true,
 			},
 			"subscription_id": schema.StringAttribute{
 				Description: "Azure SubscriptionID.",
@@ -145,6 +151,24 @@ func (r *azureSecretStoreResource) Configure(_ context.Context, req resource.Con
 	r.api = api
 }
 
+// ValidateConfig validates the resource configuration.
+func (r *azureSecretStoreResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data azureSecretStoreModel
+
+	// Read Terraform configuration data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate the connector
+	if data.ConnectorID.IsNull() && data.ConnectorPoolID.IsNull() {
+		resp.Diagnostics.AddError("Invalid Connector Configuration", "Either connector_id or connector_pool_id must be set.")
+	} else if !data.ConnectorID.IsNull() && !data.ConnectorPoolID.IsNull() {
+		resp.Diagnostics.AddError("Invalid Connector Configuration", "Only one of connector_id or connector_pool_id can be set.")
+	}
+}
+
 // Create a new resource.
 func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data azureSecretStoreModel
@@ -165,8 +189,9 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 			AppClientID:          data.AppClientID.ValueStringPointer(),
 			AppClientSecret:      data.AppClientSecret.ValueStringPointer(),
 			Connector: &cybrapi.Connector{
-				ConnectionType: data.ConnectionType.ValueStringPointer(),
-				ConnectorID:    data.ConnectorID.ValueStringPointer(),
+				ConnectionType:  data.ConnectionType.ValueStringPointer(),
+				ConnectorID:     data.ConnectorID.ValueStringPointer(),
+				ConnectorPoolID: data.ConnectorPoolID.ValueStringPointer(),
 			},
 			SubscriptionID:    data.SubscriptionID.ValueStringPointer(),
 			SubscriptionName:  data.SubscriptionName.ValueStringPointer(),
@@ -242,6 +267,7 @@ func (r *azureSecretStoreResource) Read(ctx context.Context, req resource.ReadRe
 		if output.Data.Connector != nil {
 			data.ConnectionType = types.StringPointerValue(output.Data.Connector.ConnectionType)
 			data.ConnectorID = types.StringPointerValue(output.Data.Connector.ConnectorID)
+			data.ConnectorPoolID = types.StringPointerValue(output.Data.Connector.ConnectorPoolID)
 		}
 	}
 
@@ -270,8 +296,9 @@ func (r *azureSecretStoreResource) Update(ctx context.Context, req resource.Upda
 			AppClientID:          data.AppClientID.ValueStringPointer(),
 			AppClientSecret:      data.AppClientSecret.ValueStringPointer(),
 			Connector: &cybrapi.Connector{
-				ConnectionType: data.ConnectionType.ValueStringPointer(),
-				ConnectorID:    data.ConnectorID.ValueStringPointer(),
+				ConnectionType:  data.ConnectionType.ValueStringPointer(),
+				ConnectorID:     data.ConnectorID.ValueStringPointer(),
+				ConnectorPoolID: data.ConnectorPoolID.ValueStringPointer(),
 			},
 			SubscriptionID:    data.SubscriptionID.ValueStringPointer(),
 			SubscriptionName:  data.SubscriptionName.ValueStringPointer(),
