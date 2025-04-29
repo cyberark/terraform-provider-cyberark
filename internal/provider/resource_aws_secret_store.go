@@ -189,15 +189,18 @@ func (r *awsSecretStoreResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	data = awsSecretStoreModel{
-		Name:         types.StringPointerValue(output.Name),
-		Description:  types.StringPointerValue(output.Description),
-		Type:         types.StringPointerValue(output.Type),
-		AccountAlias: types.StringPointerValue(output.Data.AccountAlias),
-		AccountID:    types.StringPointerValue(output.Data.AccountID),
-		RegionID:     types.StringPointerValue(output.Data.RegionID),
-		RoleName:     types.StringPointerValue(output.Data.RoleName),
-		ID:           types.StringValue(output.ID),
-		LastUpdated:  types.StringPointerValue(output.UpdatedAt),
+		Name:        types.StringPointerValue(output.Name),
+		Description: types.StringPointerValue(output.Description),
+		Type:        types.StringPointerValue(output.Type),
+		ID:          types.StringValue(output.ID),
+		LastUpdated: types.StringPointerValue(output.UpdatedAt),
+	}
+
+	if output.Data != nil {
+		data.AccountAlias = types.StringPointerValue(output.Data.AccountAlias)
+		data.AccountID = types.StringPointerValue(output.Data.AccountID)
+		data.RegionID = types.StringPointerValue(output.Data.RegionID)
+		data.RoleName = types.StringPointerValue(output.Data.RoleName)
 	}
 
 	// Save updated data into Terraform state

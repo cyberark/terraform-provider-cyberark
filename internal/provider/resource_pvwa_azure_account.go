@@ -244,24 +244,30 @@ func (r *pvwaAzureAccountResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	data = azureCredModel{
-		Name:                    types.StringPointerValue(newState.Name),
-		Address:                 types.StringPointerValue(newState.Address),
-		Username:                types.StringPointerValue(newState.UserName),
-		Platform:                types.StringPointerValue(newState.Platform),
-		Safe:                    types.StringPointerValue(newState.SafeName),
-		SecretType:              types.StringPointerValue(newState.SecretType),
-		Secret:                  data.Secret, // Secret is not returned by the API
-		ID:                      types.StringPointerValue(newState.CredID),
-		Manage:                  types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement),
-		ManageReason:            types.StringPointerValue(newState.SecretMgmt.ManualManagementReason),
-		MAppID:                  types.StringPointerValue(newState.Props.MAppID),
-		MAppObjectID:            types.StringPointerValue(newState.Props.MAppObjectID),
-		MKID:                    types.StringPointerValue(newState.Props.MKID),
-		MADID:                   types.StringPointerValue(newState.Props.MADID),
-		MDur:                    types.StringPointerValue(newState.Props.MDur),
-		MPop:                    types.StringPointerValue(newState.Props.MPop),
-		MKeyDesc:                types.StringPointerValue(newState.Props.MKeyDesc),
-		SecretNameInSecretStore: types.StringPointerValue(newState.Props.SecretNameInSecretStore),
+		Name:       types.StringPointerValue(newState.Name),
+		Address:    types.StringPointerValue(newState.Address),
+		Username:   types.StringPointerValue(newState.UserName),
+		Platform:   types.StringPointerValue(newState.Platform),
+		Safe:       types.StringPointerValue(newState.SafeName),
+		SecretType: types.StringPointerValue(newState.SecretType),
+		Secret:     data.Secret, // Secret is not returned by the API
+		ID:         types.StringPointerValue(newState.CredID),
+	}
+
+	if newState.Props != nil {
+		data.MAppID = types.StringPointerValue(newState.Props.MAppID)
+		data.MAppObjectID = types.StringPointerValue(newState.Props.MAppObjectID)
+		data.MKID = types.StringPointerValue(newState.Props.MKID)
+		data.MADID = types.StringPointerValue(newState.Props.MADID)
+		data.MDur = types.StringPointerValue(newState.Props.MDur)
+		data.MPop = types.StringPointerValue(newState.Props.MPop)
+		data.MKeyDesc = types.StringPointerValue(newState.Props.MKeyDesc)
+		data.SecretNameInSecretStore = types.StringPointerValue(newState.Props.SecretNameInSecretStore)
+	}
+
+	if newState.SecretMgmt != nil {
+		data.Manage = types.BoolPointerValue(newState.SecretMgmt.AutomaticManagement)
+		data.ManageReason = types.StringPointerValue(newState.SecretMgmt.ManualManagementReason)
 	}
 
 	// Set last updated time to last updated time in the vault
