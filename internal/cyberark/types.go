@@ -179,8 +179,9 @@ type AzureAkvData struct {
 
 // Connector represents the connector data
 type Connector struct {
-	ConnectionType *string `json:"connectionType"`
-	ConnectorID    *string `json:"connectorId"`
+	ConnectionType  *string `json:"connectionType"`
+	ConnectorID     *string `json:"connectorId"`
+	ConnectorPoolID *string `json:"connectorPoolId"`
 }
 
 // SecretStoreInput represents the secret store input
