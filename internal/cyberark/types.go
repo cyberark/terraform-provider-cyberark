@@ -211,21 +211,6 @@ type SecretStoresOutput[T AwsAsmData | AzureAkvData] struct {
 	SecretStores []*SecretStoreOutput[T] `json:"secretStores"`
 }
 
-// ScanScope represents the scan scope
-type ScanScope struct {
-	Scan []string `json:"secretStoresIds"`
-}
-
-// TriggerScanInputBody represents the trigger scan input body
-type TriggerScanInputBody struct {
-	Scope ScanScope `json:"scope"`
-}
-
-// TriggerScanOutput represents the trigger scan output
-type TriggerScanOutput struct {
-	ScanIDs []string `json:"scanIds"`
-}
-
 // Sync policy API
 
 // Source represents the policy source data

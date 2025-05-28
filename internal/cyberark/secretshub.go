@@ -21,6 +21,7 @@ type SecretStore interface {
 	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
 	DeleteSecretStore(ctx context.Context, storeID string) error
+	SetSecretStoreState(ctx context.Context, storeID string, action string) error
 }
 
 // SyncPolicy is an interface for interacting with SecretsHub's sync policies.
@@ -257,6 +258,32 @@ func (a *secretsHubAPI) DeleteSecretStore(ctx context.Context, storeId string) e
 		"DELETE",
 		fmt.Sprintf("/api/secret-stores/%s", storeId),
 		nil,
+		map[string]string{},
+		map[string]string{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 204 {
+		return APIErrorFromResponse(response.StatusCode, response.Body)
+	}
+
+	return nil
+}
+
+// SetSecretStoreState sets the state of a secret store in the SecretsHub.
+func (a *secretsHubAPI) SetSecretStoreState(ctx context.Context, storeID string, action string) error {
+	body, err := json.Marshal(map[string]string{"action": action})
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	response, err := a.client.DoRequest(
+		ctx,
+		"PUT",
+		fmt.Sprintf("/api/secret-stores/%s/state", storeID),
+		bytes.NewBuffer(body),
 		map[string]string{},
 		map[string]string{},
 	)
