@@ -448,6 +448,79 @@ func TestDeleteSecretStore(t *testing.T) {
 	})
 }
 
+func TestSetSecretStoreState(t *testing.T) {
+	var (
+		storeID = "test-store-id"
+		token   = []byte("dummy_token")
+	)
+
+	t.Run("SetSecretStoreStateEnableSuccess", func(t *testing.T) {
+		action := "enable"
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, http.MethodPut, req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s/state", storeID), req.URL.Path)
+
+			var requestBody map[string]string
+			err := json.NewDecoder(req.Body).Decode(&requestBody)
+			assert.NoError(t, err)
+			assert.Equal(t, action, requestBody["action"])
+
+			rw.WriteHeader(http.StatusNoContent)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, token)
+		err := client.SetSecretStoreState(context.Background(), storeID, action)
+		assert.NoError(t, err)
+	})
+
+	t.Run("SetSecretStoreStateDisableSuccess", func(t *testing.T) {
+		action := "disable"
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, http.MethodPut, req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s/state", storeID), req.URL.Path)
+
+			var requestBody map[string]string
+			err := json.NewDecoder(req.Body).Decode(&requestBody)
+			assert.NoError(t, err)
+			assert.Equal(t, action, requestBody["action"])
+
+			rw.WriteHeader(http.StatusNoContent)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, token)
+		err := client.SetSecretStoreState(context.Background(), storeID, action)
+		assert.NoError(t, err)
+	})
+
+	t.Run("SetSecretStoreStateApiError", func(t *testing.T) {
+		action := "enable"
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, token)
+		err := client.SetSecretStoreState(context.Background(), storeID, action)
+		assert.Error(t, err)
+	})
+
+	t.Run("SetSecretStoreStateNon204SuccessCode", func(t *testing.T) {
+		action := "enable"
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			// Simulate an API that returns 200 OK instead of 204 No Content on success,
+			// which should be treated as an error by the client as it expects 204.
+			rw.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, token)
+		err := client.SetSecretStoreState(context.Background(), storeID, action)
+		assert.Error(t, err) // Expecting an error because status code is not 204
+	})
+}
+
 func TestAddSyncPolicy(t *testing.T) {
 	var (
 		policy   = "test_policy"
