@@ -229,6 +229,7 @@ func (p *secretsHubProvider) Resources(_ context.Context) []func() resource.Reso
 		NewPVWASafeResource,
 		NewSyncPolicyResource,
 		NewSecretStoreStateResource,
+		NewGcpSecretStoreResource,
 	}
 }
 

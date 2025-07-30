@@ -171,6 +171,7 @@ type AzureAkvData struct {
 	AzureVaultURL        *string    `json:"azureVaultUrl"`
 	AppClientID          *string    `json:"appClientId"`
 	AppClientSecret      *string    `json:"appClientSecret"`
+	AuthenticationMethod *string    `json:"authenticationMethod,omitempty"`
 	Connector            *Connector `json:"connectionConfig"`
 	SubscriptionID       *string    `json:"subscriptionId"`
 	SubscriptionName     *string    `json:"subscriptionName"`
@@ -184,8 +185,17 @@ type Connector struct {
 	ConnectorPoolID *string `json:"connectorPoolId"`
 }
 
+// GcpData represents the Gcp data
+type GcpData struct {
+	GcpProjectName                     *string    `json:"gcpProjectName"`
+	GcpProjectNumber                   *string    `json:"gcpProjectNumber,omitempty"`
+	GcpWorkloadIdentityPoolId          *string    `json:"gcpWorkloadIdentityPoolId"`
+	GcpPoolProviderId                  *string    `json:"gcpPoolProviderId"`
+	ServiceAccountEmail                *string    `json:"serviceAccountEmail"`
+}
+
 // SecretStoreInput represents the secret store input
-type SecretStoreInput[T AwsAsmData | AzureAkvData] struct {
+type SecretStoreInput[T AwsAsmData | AzureAkvData | GcpData] struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Type        *string `json:"type"`
@@ -193,7 +203,7 @@ type SecretStoreInput[T AwsAsmData | AzureAkvData] struct {
 }
 
 // SecretStoreOutput represents the secret store output
-type SecretStoreOutput[T AwsAsmData | AzureAkvData] struct {
+type SecretStoreOutput[T AwsAsmData | AzureAkvData | GcpData] struct {
 	ID          string    `json:"id"`
 	Type        *string   `json:"type"`
 	Behaviors   []*string `json:"behaviors"`
@@ -207,7 +217,7 @@ type SecretStoreOutput[T AwsAsmData | AzureAkvData] struct {
 }
 
 // SecretStoresOutput represents the generic secret stores output
-type SecretStoresOutput[T AwsAsmData | AzureAkvData] struct {
+type SecretStoresOutput[T AwsAsmData | AzureAkvData | GcpData] struct {
 	SecretStores []*SecretStoreOutput[T] `json:"secretStores"`
 }
 
@@ -246,7 +256,7 @@ type PolicyInput struct {
 	Source         *Source              `json:"source"`
 	Target         *Target              `json:"target"`
 	Filter         *Filter              `json:"filter"`
-	Transformation *TransformationValue `json:"transformation"`
+	Transformation *TransformationValue `json:"transformation,omitempty"`
 }
 
 // FilterResponse represents the policy filter response

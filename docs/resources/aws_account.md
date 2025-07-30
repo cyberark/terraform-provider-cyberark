@@ -55,6 +55,7 @@ resource "cyberark_aws_account" "awskey" {
 
 ### Optional
 
+- `address` (String) URI, URL or IP associated with the credential.
 - `aws_account_region` (String) AWS Region.
 - `aws_alias` (String) AWS Account Alias.
 - `secret_name_in_secret_store` (String) Name of the credential object.

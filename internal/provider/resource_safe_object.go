@@ -18,9 +18,10 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource                = &safeResource{}
-	_ resource.ResourceWithConfigure   = &safeResource{}
-	_ resource.ResourceWithImportState = &safeResource{}
+	_ resource.Resource                   = &safeResource{}
+	_ resource.ResourceWithConfigure      = &safeResource{}
+	_ resource.ResourceWithImportState    = &safeResource{}
+	_ resource.ResourceWithValidateConfig = &safeResource{}
 )
 
 // NewSafeResource is a helper function to simplify the provider implementation.
@@ -60,7 +61,7 @@ func (r *safeResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `CyberArk Privilege Cloud Safe Resource
 
-This resource is responsible for creating a new privileged cloud safe in CyberaArk Privilege Cloud.
+This resource is responsible for creating a new privileged cloud safe in CyberArk Privilege Cloud.
 
 For more information click [here](https://docs.cyberark.com/privilege-cloud-shared-services/latest/en/Content/WebServices/Add%20Safe.htm).`,
 		Attributes: map[string]schema.Attribute{
@@ -106,12 +107,13 @@ For more information click [here](https://docs.cyberark.com/privilege-cloud-shar
 				Optional:    true,
 			},
 			"retention": schema.Int64Attribute{
-				Description: "The number of retained versions of every password that is stored in the Safe.",
+				Description: "The number of days that password versions are saved in the Safe.",
 				Computed:    true,
 				Optional:    true,
 			},
 			"retention_versions": schema.Int64Attribute{
-				Description: "The number of days that password versions are saved in the Safe.",
+				Description: "The number of retained versions of every password that is stored in the Safe.",
+				Computed:    true,
 				Optional:    true,
 			},
 			"purge": schema.BoolAttribute{
@@ -141,6 +143,33 @@ func (r *safeResource) Configure(_ context.Context, req resource.ConfigureReques
 	r.api = api
 }
 
+// ValidateConfig validates the resource configuration.
+func (r *safeResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data safeResourceModel
+
+	// Read Terraform configuration data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate permission level
+	switch data.PermType.ValueString() {
+	case "full", "read", "approver", "manager":
+		// valid options
+	default:
+		resp.Diagnostics.AddError("Permission Level Error",
+			fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
+		return
+	}
+
+	// Ensure at most one of retention or retention_versions is set
+	if !data.RetentionDays.IsNull() && !data.RetentionVersions.IsNull() {
+		resp.Diagnostics.AddError("Invalid Configuration", "Only one of 'retention' or 'retention_versions' may be set.")
+		return
+	}
+}
+
 // Create a new resource.
 func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data safeResourceModel
@@ -151,18 +180,9 @@ func (r *safeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	switch data.PermType.ValueString() {
-	case "full", "read", "approver", "manager":
-		// valid options
-	default:
-		resp.Diagnostics.AddError("Permission Level Error",
-			fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
-		return
-	}
-
 	newSafe := cybrapi.SafeData{
-		RetentionDays:     data.RetentionDays.ValueInt64Pointer(),
-		RetentionVersions: data.RetentionVersions.ValueInt64Pointer(),
+		RetentionDays:     nullIfUnknown(data.RetentionDays).ValueInt64Pointer(),
+		RetentionVersions: nullIfUnknown(data.RetentionVersions).ValueInt64Pointer(),
 		PurgeEnabled:      data.PurgeEnabled.ValueBoolPointer(),
 		CPM:               data.CPM.ValueStringPointer(),
 		Name:              data.Name.ValueStringPointer(),
@@ -273,8 +293,8 @@ func (r *safeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	updatedSafe := cybrapi.SafeData{
-		RetentionDays:     data.RetentionDays.ValueInt64Pointer(),
-		RetentionVersions: data.RetentionVersions.ValueInt64Pointer(),
+		RetentionDays:     nullIfUnknown(data.RetentionDays).ValueInt64Pointer(),
+		RetentionVersions: nullIfUnknown(data.RetentionVersions).ValueInt64Pointer(),
 		PurgeEnabled:      data.PurgeEnabled.ValueBoolPointer(),
 		CPM:               data.CPM.ValueStringPointer(),
 		Name:              data.Name.ValueStringPointer(),
@@ -371,4 +391,12 @@ func (r *safeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 func (r *safeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// Helper method to translate unknown int64 values to null (as opposed to 0)
+func nullIfUnknown(v types.Int64) types.Int64 {
+	if v.IsUnknown() {
+		return types.Int64Null()
+	}
+	return v
 }

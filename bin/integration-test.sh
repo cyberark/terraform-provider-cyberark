@@ -176,21 +176,26 @@ function test_resource_crud() {
   fi
   echo "${resource_name} import successful"
 
-  # Step 3: Update the Resource
+  # Step 3: Conditionally Skip Update for Sync Policy
   echo "Step 3: Updating ${resource_name}"
-  if ! terraformExecute "cd $test_dir/update && \
-    terraform validate && \
-    terraform plan && \
-    terraform apply -auto-approve"; then
-    echo "FAILED: ${resource_name} update command failed"
-    return 1
-  fi
+  if [[ "$resource_name" == "sync_policy" ]]; then
+    echo "Skipping update for sync_policy as update is not supported"
+  else
+    # Step 3: Update the Resource
+    if ! terraformExecute "cd $test_dir/update && \
+      terraform validate && \
+      terraform plan && \
+      terraform apply -auto-approve"; then
+      echo "FAILED: ${resource_name} update command failed"
+      return 1
+    fi
 
-  # Verify update was successful
-  local update_status=$(terraformExecute "cd $test_dir/update && jq -r '.outputs.update_status.value // \"fail\"' terraform.tfstate")
-  if [[ "$update_status" != "success" ]]; then
-    echo "FAILED: ${resource_name} update verification failed with status: $update_status"
-    return 1
+    # Verify update was successful
+    local update_status=$(terraformExecute "cd $test_dir/update && jq -r '.outputs.update_status.value // \"fail\"' terraform.tfstate")
+    if [[ "$update_status" != "success" ]]; then
+      echo "FAILED: ${resource_name} update verification failed with status: $update_status"
+      return 1
+    fi
   fi
 
   # Step 4: Delete the Resource

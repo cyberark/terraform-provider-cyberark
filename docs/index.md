@@ -35,3 +35,10 @@ provider "cyberark" {
 - `client_secret` (String, Sensitive) CyberArk Client ID Password.
 - `domain` (String) CyberArk Privilege Cloud Domain.
 - `tenant` (String) CyberArk Shared Services Tenant.
+
+### Optional
+
+- `pvwa_login_method` (String) CyberArk PVWA Login Method.
+- `pvwa_password` (String, Sensitive) CyberArk PVWA Password.
+- `pvwa_url` (String) CyberArk PVWA URL.
+- `pvwa_username` (String) CyberArk PVWA Username.

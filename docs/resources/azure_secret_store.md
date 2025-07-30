@@ -36,6 +36,7 @@ resource "cyberark_azure_secret_store" "storecreation" {
   subscription_id               = "Subscription ID"
   subscription_name             = "Subscription Name"
   resource_group_name           = "test_group"
+  authentication_method         = "FEDERATED_IDENTITY"
 }
 ```
 
@@ -49,12 +50,16 @@ resource "cyberark_azure_secret_store" "storecreation" {
 - `azure_app_client_secret` (String, Sensitive) Azure App Client Secret.
 - `azure_vault_url` (String) Azure Vault URL.
 - `connection_type` (String) Azure Connector Type.
-- `connector_id` (String) Azure ConnectorID.
 - `description` (String) Description for target/secret store.
 - `name` (String) Custom Secret Store Name for customizing the object name in a secret store.
 - `resource_group_name` (String) Azure resource Group Name.
 - `subscription_id` (String) Azure SubscriptionID.
 - `subscription_name` (String) Azure Subscription Name.
+
+### Optional 
+- `authentication_method` (string) Specifies the authentication mechanism used. Accepted values: CLIENT_SECRET (default), FEDERATED_IDENTITY.
+- `connector_id` (String) Azure Connector ID.
+- `connector_pool_id` (String) Azure Connector Pool ID.
 
 ### Read-Only
 
