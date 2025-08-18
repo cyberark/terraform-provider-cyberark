@@ -413,16 +413,7 @@ resource "cyberark_aws_secret_store" "my_secret_store" {
 }
 ```
 
-#### Sync Policy Update Example
-```terraform
-resource "cyberark_sync_policy" "my_policy" {
-  name        = "sync-policy"
-  description = "Updated policy description"  # Modified field
-  safe_name   = var.safe_name
-  source_id   = var.source_id
-  target_id   = var.target_id
-}
-```
+#### Note: Sync policy updates are not supported through Terraform, as CyberArk SecretsHub does not support them.
 
 ### Deleting Resources
 
