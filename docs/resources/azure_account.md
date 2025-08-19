@@ -49,7 +49,6 @@ resource "cyberark_azure_account" "mskey" {
 
 ### Required
 
-- `address` (String) URI, URL or IP associated with the credential.
 - `ms_app_id` (String) Microsoft Azure Application ID.
 - `ms_app_obj_id` (String) Microsoft Azure Application Object ID.
 - `ms_key_id` (String) Microsoft Azure Key ID.
@@ -61,6 +60,7 @@ resource "cyberark_azure_account" "mskey" {
 
 ### Optional
 
+- `address` (String) URI, URL or IP associated with the credential.
 - `ms_ad_id` (String) Microsoft Azure Active Directory ID.
 - `ms_duration` (String) Duration.
 - `ms_key_desc` (String) Key Description.

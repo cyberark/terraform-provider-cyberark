@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for the `connector_pool_id` attribute in the `azure_secret_store` resource
 - Added the `SecretStoreState` resource to allow users to enable or disable a secret store
 
+### Fixed
+- Removed sync policy update support in Terraform (CyberArk SecretsHub limitation).
+- Made the transformation parameter optional.
+- Updated README to clarify sync policy update limitations.
+- Regenerated documentation to reflect the latest code changes.
+
 ## [0.3.2] - 2025-04-30
 
 ### Fixed

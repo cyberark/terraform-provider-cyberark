@@ -246,7 +246,7 @@ type PolicyInput struct {
 	Source         *Source              `json:"source"`
 	Target         *Target              `json:"target"`
 	Filter         *Filter              `json:"filter"`
-	Transformation *TransformationValue `json:"transformation"`
+	Transformation *TransformationValue `json:"transformation,omitempty"`
 }
 
 // FilterResponse represents the policy filter response

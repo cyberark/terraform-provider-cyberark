@@ -45,7 +45,6 @@ resource "cyberark_db_account" "pgdb" {
 
 ### Required
 
-- `address` (String) URI, URL or IP associated with the credential.
 - `name` (String) Custom Account Name for customizing the object name in a safe.
 - `platform` (String) Management Platform associated with the Database Credential.
 - `safe` (String) Target Safe where the credential object will be onboarded.
@@ -54,6 +53,7 @@ resource "cyberark_db_account" "pgdb" {
 
 ### Optional
 
+- `address` (String) URI, URL or IP associated with the credential.
 - `db_dsn` (String) Database data source name.
 - `db_port` (String) Database connection port.
 - `dbname` (String) Database name.

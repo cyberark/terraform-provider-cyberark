@@ -91,8 +91,7 @@ For more information click [here](https://docs.cyberark.com/secrets-hub-privileg
 			},
 			"transformation": schema.StringAttribute{
 				Description: "To sync only the password as plain text to password_only_plain_text",
-				Computed:    true,
-				Default:     stringdefault.StaticString("password_only_plain_text"),
+				Optional:    true,
 			},
 			"description": schema.StringAttribute{
 				Description: "Description for policy.",
@@ -111,7 +110,7 @@ func (r *syncPolicyResource) Configure(_ context.Context, req resource.Configure
 	api, ok := req.ProviderData.(*cybrapi.API)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected AzureAkvData Source Configure Type",
+			"Unexpected Source Configure Type",
 			fmt.Sprintf("Expected *cybrapi.Api, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
@@ -131,9 +130,9 @@ func (r *syncPolicyResource) ValidateConfig(ctx context.Context, req resource.Va
 	}
 
 	// Validate the transformation value if provided
-	if !data.Transformation.IsNull() && data.Transformation != types.StringValue("default") && data.Transformation != types.StringValue("password_only_plain_text") {
+	if !data.Transformation.IsNull() && data.Transformation != types.StringValue("password_only_plain_text") {
 		resp.Diagnostics.AddError("Invalid Transformation Value",
-			fmt.Sprintf("Transformation value must be either 'default' or 'password_only_plain_text', got: %s", data.Transformation.ValueString()),
+			fmt.Sprintf("Transformation value must be 'password_only_plain_text', got: %s", data.Transformation.ValueString()),
 		)
 	}
 }
@@ -163,9 +162,12 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 				SafeName: data.SafeName.ValueStringPointer(),
 			},
 		},
-		Transformation: &cybrapi.TransformationValue{
+	}
+
+	if !data.Transformation.IsNull() && data.Transformation.ValueString() == "password_only_plain_text" {
+		newPolicy.Transformation = &cybrapi.TransformationValue{
 			Predefined: data.Transformation.ValueString(),
-		},
+		}
 	}
 
 	policies, err := r.api.SecretsHubAPI.GetSyncPolicies(ctx)
@@ -246,50 +248,9 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 // Update is not supported for this resource.
-func (r *syncPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data, state syncPolicyModel
-
-	// Read Terraform plan data and current state into the model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Create the new policy configuration
-	updatePolicy := cybrapi.PolicyInput{
-		Name:        data.Name.ValueStringPointer(),
-		Description: data.Description.ValueStringPointer(),
-		Source: &cybrapi.Source{
-			SourceID: data.SourceID.ValueString(),
-		},
-		Target: &cybrapi.Target{
-			TargetID: data.TargetID.ValueString(),
-		},
-		Filter: &cybrapi.Filter{
-			Type: data.Type.ValueStringPointer(),
-			Data: &cybrapi.SafeDataFilter{
-				SafeName: data.SafeName.ValueStringPointer(),
-			},
-		},
-		Transformation: &cybrapi.TransformationValue{
-			Predefined: data.Transformation.ValueString(),
-		},
-	}
-
-	// Call API to update (delete and recreate) the policy
-	policy, err := r.api.SecretsHubAPI.UpdateSyncPolicy(ctx, state.ID.ValueString(), updatePolicy)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating sync policy", err.Error())
-		return
-	}
-
-	// Update the state with the new policy information
-	data.ID = types.StringPointerValue(policy.ID)
-	data.LastUpdated = types.StringPointerValue(policy.UpdatedAt)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+func (r *syncPolicyResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError("Updating the sync policy is not supported through terraform",
+			"Please consult with your CyberArk Administrator.")
 }
 
 // Delete removes the resource and deletes the Terraform state on success.
