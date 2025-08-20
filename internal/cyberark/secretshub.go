@@ -14,12 +14,16 @@ import (
 type SecretStore interface {
 	AddAwsAsmSecretStore(ctx context.Context, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	AddAzureAkvSecretStore(ctx context.Context, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
+	AddGcpSecretStore(ctx context.Context, body SecretStoreInput[GcpData]) (*SecretStoreOutput[GcpData], error)
 	GetAwsAsmSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AwsAsmData], error)
 	GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AzureAkvData], error)
+	GetGcpSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[GcpData], error)
 	GetAwsAsmSecretStores(ctx context.Context) (*SecretStoresOutput[AwsAsmData], error)
 	GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error)
+	GetGcpSecretStores(ctx context.Context) (*SecretStoresOutput[GcpData], error)
 	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
+	UpdateGcpSecretStore(ctx context.Context, storeID string, body SecretStoreInput[GcpData]) (*SecretStoreOutput[GcpData], error)
 	DeleteSecretStore(ctx context.Context, storeID string) error
 	SetSecretStoreState(ctx context.Context, storeID string, action string) error
 }
@@ -60,6 +64,17 @@ func (a *secretsHubAPI) AddAwsAsmSecretStore(ctx context.Context, body SecretSto
 // AddAzureAkvSecretStore adds a new Azure AKS secret store to the SecretsHub.
 func (a *secretsHubAPI) AddAzureAkvSecretStore(ctx context.Context, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error) {
 	var output SecretStoreOutput[AzureAkvData]
+	err := a.addSecretStore(ctx, body, &output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
+// AddGcpSecretStore adds a new Gcp secret store to the SecretsHub.
+func (a *secretsHubAPI) AddGcpSecretStore(ctx context.Context, body SecretStoreInput[GcpData]) (*SecretStoreOutput[GcpData], error) {
+	var output SecretStoreOutput[GcpData]
 	err := a.addSecretStore(ctx, body, &output)
 	if err != nil {
 		return nil, err
@@ -120,6 +135,17 @@ func (a *secretsHubAPI) GetAzureAkvSecretStore(ctx context.Context, storeID stri
 	return &output, nil
 }
 
+// GetGcpSecretStore retrieves a secret store from the Gcp SecretsHub.
+func (a *secretsHubAPI) GetGcpSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[GcpData], error) {
+	var output SecretStoreOutput[GcpData]
+	err := a.getSecretStore(ctx, storeID, &output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
 func (a *secretsHubAPI) getSecretStore(ctx context.Context, storeID string, output interface{}) error {
 	response, err := a.client.DoRequest(
 		ctx,
@@ -161,6 +187,18 @@ func (a *secretsHubAPI) GetAzureAkvSecretStores(ctx context.Context) (*SecretSto
 	var output SecretStoresOutput[AzureAkvData]
 
 	err := a.getSecretStores(ctx, "AZURE_AKV", &output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
+// GetGcpSecretStores retrieves all Gcp secret stores from the SecretsHub.
+func (a *secretsHubAPI) GetGcpSecretStores(ctx context.Context) (*SecretStoresOutput[GcpData], error) {
+	var output SecretStoresOutput[GcpData]
+
+	err := a.getSecretStores(ctx, "GCP_GSM", &output)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +250,18 @@ func (a *secretsHubAPI) UpdateAwsSecretStore(ctx context.Context, storeId string
 // UpdateAzureAkvSecretStore updates an Azure AKV secret store in the SecretsHub.
 func (a *secretsHubAPI) UpdateAzureAkvSecretStore(ctx context.Context, storeId string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error) {
 	var output SecretStoreOutput[AzureAkvData]
+
+	err := a.updateSecretStore(ctx, storeId, body, &output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
+// UpdateGcpSecretStore updates an Gcp secret store in the SecretsHub.
+func (a *secretsHubAPI) UpdateGcpSecretStore(ctx context.Context, storeId string, body SecretStoreInput[GcpData]) (*SecretStoreOutput[GcpData], error) {
+	var output SecretStoreOutput[GcpData]
 
 	err := a.updateSecretStore(ctx, storeId, body, &output)
 	if err != nil {

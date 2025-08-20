@@ -150,6 +150,75 @@ func TestAddAzureAkvSecretStore(t *testing.T) {
 	})
 }
 
+func TestAddGcpSecretStore(t *testing.T) {
+	var (
+		secretStoreName = "test_store"
+		input           = cyberark.SecretStoreInput[cyberark.GcpData]{
+			Name: &secretStoreName,
+		}
+		body = cyberark.SecretStoreOutput[cyberark.GcpData]{
+			ID: "test_store_id",
+		}
+	)
+
+	t.Run("AddGcpSecretStore", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(http.StatusCreated)
+			json.NewEncoder(rw).Encode(body)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.AddGcpSecretStore(context.Background(), input)
+
+		assert.NoError(t, err)
+		assert.Equal(t, body, *resp)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.AddGcpSecretStore(context.Background(), input)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("SecretStoreAlreadyExists", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Secret Store already exists", http.StatusConflict)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.AddGcpSecretStore(context.Background(), input)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("MissingID", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(`{}`))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.AddGcpSecretStore(context.Background(), input)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+}
+
 func TestGetAwsAsmSecretStore(t *testing.T) {
 	var (
 		token = []byte("dummy_token")
@@ -223,6 +292,45 @@ func TestGetAzureAkvSecretStore(t *testing.T) {
 		client := cyberark.NewSecretsHubAPI(server.URL, token)
 
 		resp, err := client.GetAzureAkvSecretStore(context.Background(), storeID)
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+}
+
+func TestGetGcpSecretStore(t *testing.T) {
+	var (
+		token = []byte("dummy_token")
+		body  = cyberark.SecretStoreOutput[cyberark.GcpData]{
+			ID:   "test_store_id",
+			Data: &cyberark.GcpData{},
+		}
+		storeID = "test_store_id"
+	)
+
+	t.Run("GetGcpSecretStore", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
+			json.NewEncoder(rw).Encode(body)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, token)
+
+		resp, err := client.GetGcpSecretStore(context.Background(), storeID)
+		assert.NoError(t, err)
+
+		assert.Equal(t, &body, resp)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, token)
+
+		resp, err := client.GetGcpSecretStore(context.Background(), storeID)
 		assert.Empty(t, resp)
 		assert.Error(t, err)
 	})
@@ -304,6 +412,47 @@ func TestGetAzureAkvSecretStores(t *testing.T) {
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.GetAzureAkvSecretStores(context.Background())
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+}
+
+func TestGetGcpSecretStores(t *testing.T) {
+	var (
+		body = cyberark.SecretStoresOutput[cyberark.GcpData]{
+			SecretStores: []*cyberark.SecretStoreOutput[cyberark.GcpData]{
+				{
+					ID: "test_store_id",
+				},
+			},
+		}
+	)
+
+	t.Run("GetGcpSecretStores", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "type EQ GCP_GSM", req.URL.Query().Get("filter"))
+			json.NewEncoder(rw).Encode(body)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.GetGcpSecretStores(context.Background())
+
+		assert.NoError(t, err)
+		assert.Equal(t, body, *resp)
+	})
+
+	t.Run("ErrorStatusCode", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.GetGcpSecretStores(context.Background())
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
@@ -406,6 +555,56 @@ func TestUpdateSecretStore(t *testing.T) {
 		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
 
 		resp, err := client.UpdateAzureAkvSecretStore(context.Background(), storeID, input)
+
+		assert.Empty(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("UpdateGcpSecretStore", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+			name    = "updated_gcp_store"
+			input   = cyberark.SecretStoreInput[cyberark.GcpData]{
+				Name: &name,
+			}
+			output = cyberark.SecretStoreOutput[cyberark.GcpData]{
+				ID:   storeID,
+				Name: &name,
+			}
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "PATCH", req.Method)
+			assert.Equal(t, fmt.Sprintf("/api/secret-stores/%s", storeID), req.URL.Path)
+			json.NewEncoder(rw).Encode(output)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.UpdateGcpSecretStore(context.Background(), storeID, input)
+
+		assert.NoError(t, err)
+		assert.Equal(t, output, *resp)
+	})
+
+	t.Run("UpdateGcpSecretStoreError", func(t *testing.T) {
+		var (
+			storeID = "test-store-id"
+			name    = "updated_gcp_store"
+			input   = cyberark.SecretStoreInput[cyberark.GcpData]{
+				Name: &name,
+			}
+		)
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.UpdateGcpSecretStore(context.Background(), storeID, input)
 
 		assert.Empty(t, resp)
 		assert.Error(t, err)
