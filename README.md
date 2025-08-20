@@ -362,6 +362,9 @@ terraform import cyberark_aws_account.my_account <account_id>
 # Import an existing safe
 terraform import cyberark_safe.my_safe <safe_name>
 
+# Import an existing GCP secretstore
+terraform import cyberark_gcp_secret_store.my_gcp_policy <store_id>
+
 # Import an existing sync policy
 terraform import cyberark_sync_policy.my_policy <policy_id>
 ```
@@ -412,6 +415,17 @@ resource "cyberark_aws_secret_store" "my_secret_store" {
   aws_iam_role       = var.aws_iam_role
 }
 ```
+```terraform
+resource "cyberark_gcp_secret_store" "my_gcp_secret_store" {
+  name               = "gcp_store"
+  description        = "Updated GCP store description" # Modified field
+  gcp_project_name   = var.gcp_project_name
+  gcp_project_number = var.gcp_project_number
+  gcp_pool_provider_id  = "secretshub-provider" # Modified field
+  gcp_workload_identity_pool_id = "secretshub-allow-pool"
+  service_account_email = var.service_account_email
+}
+```
 
 #### Note: Sync policy updates are not supported through Terraform, as CyberArk SecretsHub does not support them.
 
@@ -443,6 +457,7 @@ terraform destroy
 - [AWS Secret Store](docs/resources/aws_secret_store.md)
 - [Azure Account](docs/resources/azure_account.md)
 - [Azure Secret Store](docs/resources/azure_secret_store.md)
+- [GCP Secret Store](docs/resources/gcp_secret_store.md)
 - [DB Account](docs/resources/db_account.md)
 - [Safe](docs/resources/safe.md)
 - [Sync Policy](docs/resources/sync_policy.md)
