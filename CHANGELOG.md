@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added support for the `connector_pool_id` attribute in the `azure_secret_store` resource
 - Added the `SecretStoreState` resource to allow users to enable or disable a secret store
+- Added support for GCP Secretstore with full CRUD operations and Import functionality.
 
 ### Fixed
 - Removed sync policy update support in Terraform (CyberArk SecretsHub limitation).
