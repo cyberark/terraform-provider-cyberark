@@ -51,6 +51,7 @@ resource "cyberark_safe" "test_safe" {
   member           = "secretshub"
   member_type      = "user"
   permission_level = "full"
+  # Uses the default retention policy (RetentionDays = 7)
 }
 
 # Save the ID for later use in other stages
