@@ -27,15 +27,13 @@ func TestValidateInputField(t *testing.T) {
 			name:        "Null value",
 			val:         types.StringNull(),
 			fieldName:   "test_field",
-			expectError: true,
-			errorSubstr: `missing required field "test_field"`,
+			expectError: false,
 		},
 		{
 			name:        "Unknown value",
 			val:         types.StringUnknown(),
 			fieldName:   "test_field",
-			expectError: true,
-			errorSubstr: `missing required field "test_field"`,
+			expectError: false,
 		},
 		{
 			name:        "Valid value",

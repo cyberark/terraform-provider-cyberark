@@ -10,7 +10,7 @@ import (
 
 func ValidateInputField(ctx context.Context, name string, val types.String, minLen, maxLen int, pattern string) error {
     if val.IsNull() || val.IsUnknown() {
-        return fmt.Errorf("missing required field %q", name)
+        return nil
     }
 
     str := val.ValueString()
