@@ -81,18 +81,18 @@ variable "aws_region" {
 
 # Update the safe with new values
 resource "cyberark_safe" "imported" {
-  safe_name        = var.safe_name
-  safe_desc        = "Updated for Safe CRUD testing"  # Changed value
-  member           = "secretshub"
-  member_type      = "user"
-  permission_level = "full"
-  retention        = 0  # Changed value from 7 to 0
-  purge            = false
+  safe_name          = var.safe_name
+  safe_desc          = "Updated for Safe CRUD testing"  # Changed value
+  member             = "secretshub"
+  member_type        = "user"
+  permission_level   = "full"
+  retention_versions = 10
+  purge              = false
 }
 
 output "update_status" {
   value = (
     cyberark_safe.imported.safe_desc == "Updated for Safe CRUD testing" &&
-    cyberark_safe.imported.retention == 0
+    cyberark_safe.imported.retention_versions == 10
   ) ? "success" : "fail"
 }
