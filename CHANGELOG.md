@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [0.3.4] - 2025-09-08
+### Added
 - Support for Azure Federation Identity Authentication for Azure Secrets Store
 
 ## [0.3.3] - 2025-08-22

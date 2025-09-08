@@ -47,7 +47,6 @@ resource "cyberark_azure_secret_store" "storecreation" {
 
 - `azure_app_client_directory_id` (String) Azure Application Directory ID
 - `azure_app_client_id` (String) Azure APP client ID.
-- `azure_app_client_secret` (String, Sensitive) Azure App Client Secret.
 - `azure_vault_url` (String) Azure Vault URL.
 - `connection_type` (String) Azure Connector Type.
 - `description` (String) Description for target/secret store.
@@ -60,6 +59,7 @@ resource "cyberark_azure_secret_store" "storecreation" {
 - `authentication_method` (string) Specifies the authentication mechanism used. Accepted values: CLIENT_SECRET (default), FEDERATED_IDENTITY.
 - `connector_id` (String) Azure Connector ID.
 - `connector_pool_id` (String) Azure Connector Pool ID.
+- `azure_app_client_id` (String) Azure APP client ID. Required for CLIENT_SECRET authentication.
 
 ### Read-Only
 
