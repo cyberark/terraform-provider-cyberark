@@ -24,12 +24,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated README to clarify sync policy update limitations.
 - Regenerated documentation to reflect the latest code changes.
 
-### Fixed
-- Removed sync policy update support in Terraform (CyberArk SecretsHub limitation).
-- Made the transformation parameter optional.
-- Updated README to clarify sync policy update limitations.
-- Regenerated documentation to reflect the latest code changes.
-
 ## [0.3.2] - 2025-04-30
 
 ### Fixed

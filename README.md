@@ -415,17 +415,6 @@ resource "cyberark_aws_secret_store" "my_secret_store" {
   aws_iam_role       = var.aws_iam_role
 }
 ```
-```terraform
-resource "cyberark_gcp_secret_store" "my_gcp_secret_store" {
-  name               = "gcp_store"
-  description        = "Updated GCP store description" # Modified field
-  gcp_project_name   = var.gcp_project_name
-  gcp_project_number = var.gcp_project_number
-  gcp_pool_provider_id  = "secretshub-provider" # Modified field
-  gcp_workload_identity_pool_id = "secretshub-allow-pool"
-  service_account_email = var.service_account_email
-}
-```
 
 ```terraform
 resource "cyberark_gcp_secret_store" "my_gcp_secret_store" {
