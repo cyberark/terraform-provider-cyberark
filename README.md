@@ -415,6 +415,7 @@ resource "cyberark_aws_secret_store" "my_secret_store" {
   aws_iam_role       = var.aws_iam_role
 }
 ```
+
 ```terraform
 resource "cyberark_gcp_secret_store" "my_gcp_secret_store" {
   name               = "gcp_store"

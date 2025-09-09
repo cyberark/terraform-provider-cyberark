@@ -42,6 +42,7 @@ type azureSecretStoreModel struct {
 	AzureVaultURL        types.String `tfsdk:"azure_vault_url"`
 	AppClientID          types.String `tfsdk:"azure_app_client_id"`
 	AppClientSecret      types.String `tfsdk:"azure_app_client_secret"`
+	AuthenticationMethod types.String `tfsdk:"authentication_method"`
 	ConnectionType       types.String `tfsdk:"connection_type"`
 	ConnectorID          types.String `tfsdk:"connector_id"`
 	ConnectorPoolID      types.String `tfsdk:"connector_pool_id"`
@@ -101,8 +102,12 @@ For more information click [here](https://docs.cyberark.com/secrets-hub-privileg
 			},
 			"azure_app_client_secret": schema.StringAttribute{
 				Description: "Azure App Client Secret.",
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
+			},
+			"authentication_method": schema.StringAttribute{
+				Description:        "Azure Authentication Method.",
+				Optional:           true,
 			},
 			"connection_type": schema.StringAttribute{
 				Description: "Azure Connector Type.",
@@ -160,12 +165,35 @@ func (r *azureSecretStoreResource) ValidateConfig(ctx context.Context, req resou
 	if resp.Diagnostics.HasError() {
 		return
 	}
+    
+	if !data.AppClientSecret.IsNull() {
+		resp.Diagnostics.AddWarning(
+		"Deprecated option in use",
+		"You are using `CLIENT_SECRET`, which is deprecated and will be removed in future releases. " +
+			"Please migrate to `FEDERATED_IDENTITY`.",
+		)
+    }
+
+	if !data.AuthenticationMethod.IsNull() {
+	   val := *data.AuthenticationMethod.ValueStringPointer()
+	   if val != "CLIENT_SECRET" && val != "FEDERATED_IDENTITY" {
+	      resp.Diagnostics.AddError("Invalid value for Authentication Method", "Please provide correct authentication_method value either as `CLIENT_SECRET` or `FEDERATED_IDENTITY`")
+	   }
+
+	   if val == "FEDERATED_IDENTITY" {
+	       if !data.AppClientSecret.IsNull() {
+		       resp.Diagnostics.AddError("Invalid parameter azure_app_client_secret provided", "Please don't provide azure_app_client_secret for `FEDERATED_IDENTITY` authentication.")
+		   }
+	   }
+	}
 
 	// Validate the connector
-	if data.ConnectorID.IsNull() && data.ConnectorPoolID.IsNull() {
-		resp.Diagnostics.AddError("Invalid Connector Configuration", "Either connector_id or connector_pool_id must be set.")
-	} else if !data.ConnectorID.IsNull() && !data.ConnectorPoolID.IsNull() {
-		resp.Diagnostics.AddError("Invalid Connector Configuration", "Only one of connector_id or connector_pool_id can be set.")
+	if data.ConnectionType.ValueStringPointer() != nil && *data.ConnectionType.ValueStringPointer() == "CONNECTOR" {
+		if data.ConnectorID.IsNull() && data.ConnectorPoolID.IsNull() {
+			resp.Diagnostics.AddError("Invalid Connector Configuration", "Either connector_id or connector_pool_id must be set.")
+		} else if !data.ConnectorID.IsNull() && !data.ConnectorPoolID.IsNull() {
+			resp.Diagnostics.AddError("Invalid Connector Configuration", "Only one of connector_id or connector_pool_id can be set.")
+		}
 	}
 }
 
@@ -188,6 +216,12 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 			AzureVaultURL:        data.AzureVaultURL.ValueStringPointer(),
 			AppClientID:          data.AppClientID.ValueStringPointer(),
 			AppClientSecret:      data.AppClientSecret.ValueStringPointer(),
+			AuthenticationMethod: func() *string {
+				if !data.AuthenticationMethod.IsNull() && !data.AuthenticationMethod.IsUnknown() {
+					return data.AuthenticationMethod.ValueStringPointer()
+				}
+				return nil
+			}(),
 			Connector: &cybrapi.Connector{
 				ConnectionType:  data.ConnectionType.ValueStringPointer(),
 				ConnectorID:     data.ConnectorID.ValueStringPointer(),
@@ -260,6 +294,7 @@ func (r *azureSecretStoreResource) Read(ctx context.Context, req resource.ReadRe
 		data.AzureVaultURL = types.StringPointerValue(output.Data.AzureVaultURL)
 		data.AppClientID = types.StringPointerValue(output.Data.AppClientID)
 		data.AppClientSecret = types.StringPointerValue(output.Data.AppClientSecret)
+		data.AuthenticationMethod = types.StringPointerValue(output.Data.AuthenticationMethod)
 		data.SubscriptionID = types.StringPointerValue(output.Data.SubscriptionID)
 		data.SubscriptionName = types.StringPointerValue(output.Data.SubscriptionName)
 		data.ResourceGroupName = types.StringPointerValue(output.Data.ResourceGroupName)
@@ -295,6 +330,7 @@ func (r *azureSecretStoreResource) Update(ctx context.Context, req resource.Upda
 			AzureVaultURL:        data.AzureVaultURL.ValueStringPointer(),
 			AppClientID:          data.AppClientID.ValueStringPointer(),
 			AppClientSecret:      data.AppClientSecret.ValueStringPointer(),
+			AuthenticationMethod: data.AuthenticationMethod.ValueStringPointer(),
 			Connector: &cybrapi.Connector{
 				ConnectionType:  data.ConnectionType.ValueStringPointer(),
 				ConnectorID:     data.ConnectorID.ValueStringPointer(),

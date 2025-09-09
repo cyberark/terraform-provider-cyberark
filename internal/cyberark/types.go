@@ -171,6 +171,7 @@ type AzureAkvData struct {
 	AzureVaultURL        *string    `json:"azureVaultUrl"`
 	AppClientID          *string    `json:"appClientId"`
 	AppClientSecret      *string    `json:"appClientSecret"`
+	AuthenticationMethod *string    `json:"authenticationMethod,omitempty"`
 	Connector            *Connector `json:"connectionConfig"`
 	SubscriptionID       *string    `json:"subscriptionId"`
 	SubscriptionName     *string    `json:"subscriptionName"`
