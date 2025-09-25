@@ -206,7 +206,8 @@ variable "secret_key" {
 terraform {
     required_providers {
       cyberark = {
-        source  = “registry.terraform.io/cyberark/cyberark"version = "~> 0"
+        source  = "registry.terraform.io/cyberark/cyberark"
+        version = "~> 0"
       }
     }
   }
@@ -223,6 +224,7 @@ resource "cyberark_safe" "AAM_Test_Safe" {
   member             = "demo@cyberark.cloud.aarp0000"
   member_type        = "user"
   permission_level   = "read" # full, read, approver, manager
+  # Define either retention (days) or retention_versions. Defining both will result in an error from the API.
   retention          = 7
   retention_versions = 7
   purge              = false
@@ -281,6 +283,7 @@ resource "cyberark_safe" "PCloud_Test_Safe" {
   member             = "demo@cyberark.cloud.aarp0000"
   member_type        = "user"
   permission_level   = "read" # full, read, approver, manager
+  # Define either retention (days) or retention_versions. Defining both will result in an error from the API.
   retention          = 7
   retention_versions = 7
   purge              = false
@@ -320,6 +323,7 @@ resource "cyberark_pam_safe" "PAM_Test_Safe" {
   member             = "demo@cyberark.cloud.aarp0000"
   member_type        = "user"
   permission_level   = "read" # full, read, approver, manager
+  # Define either retention (days) or retention_versions. Defining both will result in an error from the API.
   retention          = 7
   retention_versions = 7
   purge              = false
