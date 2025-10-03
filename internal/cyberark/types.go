@@ -145,7 +145,7 @@ type SafeData struct {
 	OwnerType            *string `json:"memberType,omitempty"`
 	Level                *string `json:"omitempty"`
 	LastModificationTime *int64  `json:"lastModificationTime,omitempty"`
-	EnableOLAC           *bool   `json:"enableOLAC,omitempty"`
+	EnableOLAC           *bool   `json:"olacEnabled,omitempty"`
 }
 
 // API represents the CyberArk's SecretsHub and PAM API
@@ -187,11 +187,11 @@ type Connector struct {
 
 // GcpData represents the Gcp data
 type GcpData struct {
-	GcpProjectName                     *string    `json:"gcpProjectName"`
-	GcpProjectNumber                   *string    `json:"gcpProjectNumber,omitempty"`
-	GcpWorkloadIdentityPoolId          *string    `json:"gcpWorkloadIdentityPoolId"`
-	GcpPoolProviderId                  *string    `json:"gcpPoolProviderId"`
-	ServiceAccountEmail                *string    `json:"serviceAccountEmail"`
+	GcpProjectName            *string `json:"gcpProjectName"`
+	GcpProjectNumber          *string `json:"gcpProjectNumber,omitempty"`
+	GcpWorkloadIdentityPoolId *string `json:"gcpWorkloadIdentityPoolId"`
+	GcpPoolProviderId         *string `json:"gcpPoolProviderId"`
+	ServiceAccountEmail       *string `json:"serviceAccountEmail"`
 }
 
 // SecretStoreInput represents the secret store input

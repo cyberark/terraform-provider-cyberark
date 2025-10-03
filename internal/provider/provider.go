@@ -56,20 +56,20 @@ func (p *secretsHubProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"tenant": schema.StringAttribute{
 				Description: "CyberArk Shared Services Tenant.",
-				Required:    true,
+				Optional:    true,
 			},
 			"client_id": schema.StringAttribute{
 				Description: "CyberArk Client ID, formatted as username@cyberark.cloud.tenant.",
-				Required:    true,
+				Optional:    true,
 			},
 			"client_secret": schema.StringAttribute{
 				Description: "CyberArk Client ID Password.",
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 			},
 			"domain": schema.StringAttribute{
 				Description: "CyberArk Privilege Cloud Domain.",
-				Required:    true,
+				Optional:    true,
 			},
 			"pvwa_username": schema.StringAttribute{
 				Description: "CyberArk PVWA Username.",
@@ -154,26 +154,37 @@ func (p *secretsHubProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	t := data.Tenant.ValueString()
-	cid := data.ClientID.ValueString()
-	d := data.Domain.ValueString()
+	tenant := data.Tenant.ValueString()
+	clientID := data.ClientID.ValueString()
+	domain := data.Domain.ValueString()
 
-	// Create a client for Cyberark ISPSS (Identity Security Platform Shared Services)
-	identityAuthAPI := cybrapi.NewIdentityAuthAPI(fmt.Sprintf(cloudAuthURL, t))
-
-	token, err := identityAuthAPI.GetToken(ctx, cid, []byte(data.ClientSecret.ValueString()))
-
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get authentication token",
-			fmt.Sprintf("Failed to get authentication token from Cyberark ISPSS service: %+v", err))
+	// checks that either all or none of tenant, clientID, domain, client secret are set
+	// if some are set but not all, return an error
+	if (tenant == "" || clientID == "" || domain == "" || data.ClientSecret.ValueString() == "") && (tenant != "" || clientID != "" || domain != "" || data.ClientSecret.ValueString() != "") {
+		resp.Diagnostics.AddError("Incomplete Configuration",
+			"Either all of tenant, client_id, client_secret, and domain must be set, or none of them must be set.")
 		return
 	}
+	var pamAPI cybrapi.PAMAPI = nil
+	var secretsHubAPI cybrapi.SecretsHubAPI = nil
+	if tenant != "" {
+		// Create a client for Cyberark ISPSS (Identity Security Platform Shared Services)
+		identityAuthAPI := cybrapi.NewIdentityAuthAPI(fmt.Sprintf(cloudAuthURL, tenant))
 
-	// Create a client for Cyberark PAM
-	pamAPI := cybrapi.NewPAMAPI(fmt.Sprintf(cloudPamURL, d), token, true)
+		token, err := identityAuthAPI.GetToken(ctx, clientID, []byte(data.ClientSecret.ValueString()))
 
-	// Create a client for Cyberark SecretsHub
-	secretsHubAPI := cybrapi.NewSecretsHubAPI(fmt.Sprintf(cloudSecretsHubURL, d), token)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to get authentication token",
+				fmt.Sprintf("Failed to get authentication token from Cyberark ISPSS service: %+v", err))
+			return
+		}
+
+		// Create a client for Cyberark PAM
+		pamAPI = cybrapi.NewPAMAPI(fmt.Sprintf(cloudPamURL, domain), token, true)
+
+		// Create a client for Cyberark SecretsHub
+		secretsHubAPI = cybrapi.NewSecretsHubAPI(fmt.Sprintf(cloudSecretsHubURL, domain), token)
+	}
 
 	var pvwaAPI cybrapi.PAMAPI = nil
 	if data.PVWAURL.ValueString() != "" {
