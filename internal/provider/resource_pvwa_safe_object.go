@@ -4,6 +4,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -187,22 +188,13 @@ func (r *pvwaSafeResource) Create(ctx context.Context, req resource.CreateReques
 
 	safeName := data.Name.ValueString()
 
-	// Check if safe already exists
-	_, err := r.api.PVWAAPI.GetSafe(ctx, safeName)
-	if err == nil {
-		resp.Diagnostics.AddError("Safe Already Exists",
-			fmt.Sprintf("Safe '%s' already exists. Use import to manage existing safes", safeName))
-		return
-	}
-
 	newSafe := mapToSafeData(data)
 
 	tflog.Info(ctx, "Creating new safe", map[string]interface{}{"safe_name": safeName})
 	safe, err := r.api.PVWAAPI.AddSafe(ctx, newSafe)
 
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating safe",
-			fmt.Sprintf("Failed to create safe '%s': %s", safeName, err.Error()))
+	if errMsg := handleCreateError(safeName, err); errMsg != "" {
+		resp.Diagnostics.AddError("Error creating safe", errMsg)
 		return
 	}
 
@@ -260,7 +252,7 @@ func (r *pvwaSafeResource) Read(ctx context.Context, req resource.ReadRequest, r
 func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var init, data, state pvwaSafeResourceModel
 
-	req.Config.Get(ctx, &init)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &init)...)
 	// Read Terraform plan data and current state into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -301,19 +293,15 @@ func (r *pvwaSafeResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Call API to update the safe
 	safe, err := r.api.PVWAAPI.UpdateSafe(ctx, state.ID.ValueString(), updatedSafe)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating safe", err.Error())
+	if errMsg := handleCreateError(data.Name.ValueString(), err); errMsg != "" {
+		resp.Diagnostics.AddError("Error updating safe", errMsg)
 		return
 	}
 
 	if !state.SeedMember.IsNull() && !state.SeedMType.IsNull() && !state.PermType.IsNull() {
 		// Validate permission level
-		switch data.PermType.ValueString() {
-		case "full", "read", "approver", "manager":
-			// valid options
-		default:
-			resp.Diagnostics.AddError("Permission Level Error",
-				fmt.Sprintf("Permission level (%s) does not match acceptable values", data.PermType.ValueString()))
+		if err := validatePermissionLevel(data.PermType.ValueString()); err != nil {
+			resp.Diagnostics.AddError("Permission Level Error", err.Error())
 			return
 		}
 
@@ -443,4 +431,17 @@ func getLastUpdated(lastModificationTime *int64) types.String {
 		return types.StringValue(newTime.Format(time.RFC3339))
 	}
 	return types.StringValue(time.Now().Format(time.RFC3339))
+}
+
+func handleCreateError(safeName string, err error) string {
+	if err == nil {
+		return ""
+	}
+
+	// Handling safe exists error
+	if strings.Contains(err.Error(), "SFWS0002") {
+		return fmt.Sprintf("Safe '%s' already exists. Use import to manage existing safes", safeName)
+	}
+
+	return fmt.Sprintf("Failed to create safe '%s': %s", safeName, err.Error())
 }

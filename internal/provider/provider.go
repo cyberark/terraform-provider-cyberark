@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -16,8 +17,7 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ provider.Provider                   = &secretsHubProvider{}
-	_ provider.ProviderWithValidateConfig = &secretsHubProvider{}
+	_ provider.Provider = &secretsHubProvider{}
 )
 
 const (
@@ -92,59 +92,6 @@ func (p *secretsHubProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 	}
 }
 
-// ValidateConfig validates the configuration data.
-func (p *secretsHubProvider) ValidateConfig(ctx context.Context, req provider.ValidateConfigRequest, resp *provider.ValidateConfigResponse) {
-	var data secretsHubProviderModel
-
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Validate PVWA Login Method
-	validPVWALoginMethods := []string{"cyberark", "ldap", "windows", "radius"}
-	if data.PVWALoginMethod.ValueString() != "" {
-		valid := false
-		for _, method := range validPVWALoginMethods {
-			if data.PVWALoginMethod.ValueString() == method {
-				valid = true
-				break
-			}
-		}
-
-		if !valid {
-			resp.Diagnostics.AddError("Invalid PVWA Login Method",
-				fmt.Sprintf("Invalid PVWA Login Method: %s. Valid methods are: %v", data.PVWALoginMethod.ValueString(), validPVWALoginMethods))
-		}
-	}
-
-	// Validate PVWA attributes (not including PVWA Login Method which defaults to "cyberark")
-	pvwaAttributes := map[string]types.String{
-		"pvwa_username": data.PVWAUsername,
-		"pvwa_password": data.PVWAPassword,
-		"pvwa_url":      data.PVWAURL,
-	}
-
-	// Check if any PVWA attribute is set
-	anySet := false
-	for _, attr := range pvwaAttributes {
-		if attr.ValueString() != "" {
-			anySet = true
-			break
-		}
-	}
-
-	// If any PVWA attribute is set, ensure all are set
-	if anySet {
-		for name, attr := range pvwaAttributes {
-			if attr.ValueString() == "" {
-				resp.Diagnostics.AddError("Missing PVWA Attribute",
-					fmt.Sprintf("Missing PVWA attribute: %s", name))
-			}
-		}
-	}
-}
-
 // Configure parses the configuration data and initializes the provider.
 func (p *secretsHubProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data secretsHubProviderModel
@@ -154,20 +101,20 @@ func (p *secretsHubProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	tenant := data.Tenant.ValueString()
-	clientID := data.ClientID.ValueString()
-	domain := data.Domain.ValueString()
-
-	// checks that either all or none of tenant, clientID, domain, client secret are set
-	// if some are set but not all, return an error
-	if (tenant == "" || clientID == "" || domain == "" || data.ClientSecret.ValueString() == "") && (tenant != "" || clientID != "" || domain != "" || data.ClientSecret.ValueString() != "") {
-		resp.Diagnostics.AddError("Incomplete Configuration",
-			"Either all of tenant, client_id, client_secret, and domain must be set, or none of them must be set.")
+	// Validate the provider configuration data here
+	// because in the ValidateConfig method env variables (e.g. client_secret, pvwa_password) are not yet resolved
+	resp.Diagnostics.Append(validateProviderConfigModel(data)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	var pamAPI cybrapi.PAMAPI = nil
-	var secretsHubAPI cybrapi.SecretsHubAPI = nil
+
+	var pamAPI cybrapi.PAMAPI
+	var secretsHubAPI cybrapi.SecretsHubAPI
+
+	tenant := data.Tenant.ValueString()
 	if tenant != "" {
+		clientID := data.ClientID.ValueString()
+		domain := data.Domain.ValueString()
 		// Create a client for Cyberark ISPSS (Identity Security Platform Shared Services)
 		identityAuthAPI := cybrapi.NewIdentityAuthAPI(fmt.Sprintf(cloudAuthURL, tenant))
 
@@ -251,4 +198,87 @@ func New(version string) func() provider.Provider {
 			version: version,
 		}
 	}
+}
+
+func validateProviderConfigModel(data secretsHubProviderModel) (diags diag.Diagnostics) {
+	// Validate mandatory pCloud attributes
+	if err := validateRequiredAttributes(map[string]string{
+		"tenant":        data.Tenant.ValueString(),
+		"client_id":     data.ClientID.ValueString(),
+		"client_secret": data.ClientSecret.ValueString(),
+		"domain":        data.Domain.ValueString(),
+	}); err != nil {
+		for _, e := range err {
+			diags.AddError("Privilege Cloud Vault provider attribute error", e)
+		}
+	}
+
+	pvwaErrorSummary := "PAM Self-Hosted Vault (PVWA) provider attribute error"
+	if err := validatePVWALoginMethod(data.PVWALoginMethod.ValueString()); err != nil {
+		diags.AddError(pvwaErrorSummary, err.Error())
+	}
+
+	// Validate mandatory PAM self-hosted attributes
+	if err := validateRequiredAttributes(map[string]string{
+		"pvwa_username": data.PVWAUsername.ValueString(),
+		"pvwa_password": data.PVWAPassword.ValueString(),
+		"pvwa_url":      data.PVWAURL.ValueString(),
+	}); err != nil {
+		for _, e := range err {
+			diags.AddError(pvwaErrorSummary, e)
+		}
+	}
+
+	if diags.HasError() {
+		return
+	}
+
+	if data.Tenant.ValueString() == "" && data.PVWAURL.ValueString() == "" {
+		diags.AddError(
+			"Missing Configuration",
+			"At least one of the following sets of attributes must be provided:\n"+
+				"1) tenant, client_id, client_secret, domain\n"+
+				"2) pvwa_username, pvwa_password, pvwa_url",
+		)
+	}
+	return
+}
+
+func validateRequiredAttributes(attrs map[string]string) []string {
+	anySet := false
+	for _, v := range attrs {
+		if v != "" {
+			anySet = true
+			break
+		}
+	}
+	var missing []string
+	if anySet {
+		for name, v := range attrs {
+			if v == "" {
+				missing = append(missing,
+					fmt.Sprintf("Missing required attribute: %s", name),
+				)
+			}
+		}
+		return missing
+	}
+	return nil
+}
+
+func validatePVWALoginMethod(method string) error {
+	if method == "" {
+		//defaults to cyberark
+		return nil
+	}
+	validMethods := map[string]struct{}{
+		"cyberark": {},
+		"ldap":     {},
+		"windows":  {},
+		"radius":   {},
+	}
+	if _, ok := validMethods[method]; !ok {
+		return fmt.Errorf("login method (%s) is invalid. Acceptable values: cyberark, ldap, windows, radius", method)
+	}
+	return nil
 }

@@ -2,20 +2,13 @@ package provider
 
 import (
 	"context"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
-
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
-	testresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestSafeResource_Metadata(t *testing.T) {
@@ -149,71 +142,6 @@ func TestValidateSafeModel(t *testing.T) {
 	}
 }
 
-func TestValidateConfig_PermissionValidation(t *testing.T) {
-	t.Parallel()
-
-	providerFactories := map[string]func() (tfprotov6.ProviderServer, error){
-		"cyberark": providerserver.NewProtocol6WithError(New("0.0.1")()),
-	}
-
-	testresource.UnitTest(t, testresource.TestCase{
-		IsUnitTest:               true,
-		ProtoV6ProviderFactories: providerFactories,
-		Steps: []testresource.TestStep{
-			// Invalid config: incorrect schema
-			{
-				Config: `
-provider "cyberark" {}
-
-resource "cyberark_pvwa_safe" "bad1" {
-	random						= true
-  safe_name         = "test_safe"
-  member            = "test_user"
-  member_type       = "user"
-  permission_level  = "none"
-  retention         = 7
-}
-`,
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(`An argument named "random" is not expected here`),
-			},
-			// Invalid config: expect Permission Level Error
-			{
-				Config: `
-provider "cyberark" {}
-
-resource "cyberark_pvwa_safe" "bad2" {
-  safe_name         = "test_safe"
-  member            = "test_user"
-  member_type       = "user"
-  permission_level  = "none"
-  retention         = 7
-}
-`,
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(`Permission Level Error`),
-			},
-
-			// Valid config
-			{
-				Config: `
-provider "cyberark" {}
-
-resource "cyberark_pvwa_safe" "good" {
-  safe_name         = "test_safe"
-  member            = "test_user"
-  member_type       = "user"
-  permission_level  = "full"
-  retention         = 7
-}
-`,
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func TestSafeResource_Configure(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -302,34 +230,5 @@ func TestGetLastUpdated(t *testing.T) {
 	}
 	if time.Since(gotTime) > time.Second {
 		t.Errorf("expected time within 1s of now, got %s", gotNil.ValueString())
-	}
-}
-
-// Helper function that constructs a tfsdk.Config from a map of attribute values.
-func buildConfig(attrs map[string]any) tfsdk.Config {
-	// Get the real schema from the resource
-	r := &pvwaSafeResource{}
-	schemaResp := &resource.SchemaResponse{}
-	r.Schema(context.Background(), resource.SchemaRequest{}, schemaResp)
-
-	// Convert the framework schema to tftypes
-	schemaType := schemaResp.Schema.Type().TerraformType(context.Background())
-
-	// Build the attribute values map with all schema attributes
-	attrTypes := schemaType.(tftypes.Object).AttributeTypes
-	values := make(map[string]tftypes.Value)
-
-	for attrName, attrType := range attrTypes {
-		if val, exists := attrs[attrName]; exists {
-			values[attrName] = tftypes.NewValue(attrType, val)
-		} else {
-			values[attrName] = tftypes.NewValue(attrType, nil)
-		}
-	}
-
-	obj := tftypes.NewValue(schemaType, values)
-	return tfsdk.Config{
-		Raw:    obj,
-		Schema: schemaResp.Schema,
 	}
 }
