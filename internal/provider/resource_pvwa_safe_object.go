@@ -31,6 +31,12 @@ func NewPVWASafeResource() resource.Resource {
 	return &pvwaSafeResource{}
 }
 
+func NewPVWASafeResourceWithAPI(api *cybrapi.API) resource.Resource {
+	return &pvwaSafeResource{
+		api: api,
+	}
+}
+
 // safeResource defines the resource implementation.
 type pvwaSafeResource struct {
 	api *cybrapi.API
