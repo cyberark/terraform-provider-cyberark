@@ -124,12 +124,12 @@ For more information click [here](https://docs.cyberark.com/pam-self-hosted/late
 				Optional:    true,
 			},
 			"purge": schema.BoolAttribute{
-				Description: "Whether or not to automatically purge files after the end of the Object History Retention Period defined in the Safe properties.",
+				Description: "Whether to automatically purge files after the end of the Object History Retention Period defined in the Safe properties.",
 				Optional:    true,
 				Computed:    true,
 			},
 			"enable_olac": schema.BoolAttribute{
-				Description: "Whether or not to enable Object Level Access Control (OLAC) for the Safe.",
+				Description: "Whether to enable Object Level Access Control (OLAC) for the Safe.",
 				Optional:    true,
 				Computed:    true,
 			},

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+
+## [0.3.5] - 2025-10-13
+### Fixed
+- Fixed issues with Import, Update, Delete (Destroy) operations for PAM Self-Hosted
+- Corrected documentation inaccuracies related to PAM Self-Hosted
+
+### Added
+- Possibility to use PAM Self-Hosted as a standalone provider without the need for SecretsHub provider definition.
+
 ## [0.3.4] - 2025-09-08
 ### Added
 - Support for Azure Federation Identity Authentication for Azure Secrets Store
