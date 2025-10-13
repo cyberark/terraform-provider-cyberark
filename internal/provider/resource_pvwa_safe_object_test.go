@@ -2,16 +2,24 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
+
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	testresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestSafeResource_Metadata(t *testing.T) {
+	t.Parallel()
+
 	r := &pvwaSafeResource{}
 	req := resource.MetadataRequest{ProviderTypeName: "cyberark"}
 	resp := &resource.MetadataResponse{}
@@ -22,6 +30,8 @@ func TestSafeResource_Metadata(t *testing.T) {
 }
 
 func TestSafeResource_Schema_AttributeProperties(t *testing.T) {
+	t.Parallel()
+
 	r := &pvwaSafeResource{}
 	resp := &resource.SchemaResponse{}
 	r.Schema(context.Background(), resource.SchemaRequest{}, resp)
@@ -66,6 +76,8 @@ func TestSafeResource_Schema_AttributeProperties(t *testing.T) {
 }
 
 func TestValidateSafeModel(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name       string
 		model      pvwaSafeResourceModel
@@ -143,6 +155,8 @@ func TestValidateSafeModel(t *testing.T) {
 }
 
 func TestSafeResource_Configure(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		providerData interface{}
@@ -212,6 +226,8 @@ func TestSafeResource_Configure(t *testing.T) {
 }
 
 func TestGetLastUpdated(t *testing.T) {
+	t.Parallel()
+
 	// Case 1: lastModificationTime is not nil
 	now := time.Now()
 	micro := now.UnixMicro()
@@ -231,4 +247,283 @@ func TestGetLastUpdated(t *testing.T) {
 	if time.Since(gotTime) > time.Second {
 		t.Errorf("expected time within 1s of now, got %s", gotNil.ValueString())
 	}
+}
+
+func TestSafeResource(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		mockedAPIFactory func() *cybrapi.MockPAMAPI
+		expectedError    *regexp.Regexp
+	}{
+		{
+			name: "CreateReadDelete_Successful",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("GetSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("DeleteSafeMember", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				pvwaApi.On("DeleteSafe", mock.Anything, mock.Anything).Return(nil)
+				return pvwaApi
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Create_FailingSafeCreation",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(&cybrapi.SafeData{}, errors.New("safe creation error"))
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Error creating safe"),
+		},
+		{
+			name: "Create_FailingSafeMemberCreation",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(&cybrapi.SafeData{}, nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(&cybrapi.Member{}, errors.New("safe member creation error"))
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Error adding a safe member"),
+		},
+		{
+			name: "Read_FailingRead",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("GetSafe", mock.Anything, mock.Anything).Return(&cybrapi.SafeData{}, errors.New("safe read error"))
+				pvwaApi.On("DeleteSafeMember", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				pvwaApi.On("DeleteSafe", mock.Anything, mock.Anything).Return(nil)
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Error reading safe"),
+		},
+		{
+			name: "Create_FailingSafeMemberCreation",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(&cybrapi.SafeData{}, nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(&cybrapi.Member{}, errors.New("safe member creation error"))
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Error adding a safe member"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log(tt.name)
+		testresource.UnitTest(t, testresource.TestCase{
+			ProtoV6ProviderFactories: mockProtoV6ProviderFactories(getMockedAPI(tt.mockedAPIFactory())),
+			Steps: []testresource.TestStep{
+				{
+					Config:      testPVWASafeMinimalConfig(),
+					ExpectError: tt.expectedError,
+				},
+			},
+		})
+	}
+}
+
+func TestSafeResource_Update(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		mockedAPIFactory func() *cybrapi.MockPAMAPI
+		expectedError    *regexp.Regexp
+		updateConfig     string
+	}{
+		{
+			name: "SuccessfulUpdate",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("GetSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("UpdateSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("UpdateSafe", mock.Anything, mock.Anything, mock.Anything).Return(getUpdatedTestSafe(), nil)
+				pvwaApi.On("DeleteSafeMember", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				pvwaApi.On("DeleteSafe", mock.Anything, mock.Anything).Return(nil)
+				return pvwaApi
+			},
+			expectedError: nil,
+			updateConfig:  testPVWASafeMinimalUpdateConfig(),
+		},
+		{
+			name: "FailingSafeUpdate",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("GetSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("UpdateSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("UpdateSafe", mock.Anything, mock.Anything, mock.Anything).Return(getUpdatedTestSafe(), errors.New("safe update error"))
+				pvwaApi.On("DeleteSafeMember", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				pvwaApi.On("DeleteSafe", mock.Anything, mock.Anything).Return(nil)
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Error updating safe"),
+			updateConfig:  testPVWASafeMinimalUpdateConfig(),
+		},
+		{
+			name: "FailingSafeMemberUpdate",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("GetSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("UpdateSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), errors.New("safe member update error"))
+				pvwaApi.On("UpdateSafe", mock.Anything, mock.Anything, mock.Anything).Return(getUpdatedTestSafe(), nil)
+				pvwaApi.On("DeleteSafeMember", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				pvwaApi.On("DeleteSafe", mock.Anything, mock.Anything).Return(nil)
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Error updating safe member"),
+			updateConfig:  testPVWASafeMinimalUpdateConfig(),
+		},
+		{
+			name: "ValidateOLACDisableAttempt",
+			mockedAPIFactory: func() *cybrapi.MockPAMAPI {
+				pvwaApi := cybrapi.NewMockPAMAPI()
+				pvwaApi.On("AddSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("AddSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("GetSafe", mock.Anything, mock.Anything).Return(getTestSafe(), nil)
+				pvwaApi.On("UpdateSafeMember", mock.Anything, mock.Anything).Return(getTestMember(), nil)
+				pvwaApi.On("UpdateSafe", mock.Anything, mock.Anything, mock.Anything).Return(getUpdatedTestSafeOLAC(), nil)
+				pvwaApi.On("DeleteSafeMember", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				pvwaApi.On("DeleteSafe", mock.Anything, mock.Anything).Return(nil)
+				return pvwaApi
+			},
+			expectedError: regexp.MustCompile("Disabling Object Level Access Control"),
+			updateConfig:  testPVWASafeMinimalUpdateConfigOLAC(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log(tt.name)
+		testresource.UnitTest(t, testresource.TestCase{
+			ProtoV6ProviderFactories: mockProtoV6ProviderFactories(getMockedAPI(tt.mockedAPIFactory())),
+			Steps: []testresource.TestStep{
+				{ // 1. Create resource
+					Config: testPVWASafeMinimalConfig(),
+				},
+				{ // 2. Update resource
+					Config:             tt.updateConfig,
+					ExpectNonEmptyPlan: true,
+					ExpectError:        tt.expectedError,
+				},
+			},
+		})
+	}
+}
+
+func getMockedAPI(pvwaApi *cybrapi.MockPAMAPI) *cybrapi.API {
+	return &cybrapi.API{
+		PVWAAPI: pvwaApi,
+	}
+}
+
+func getTestSafe() *cybrapi.SafeData {
+	return &cybrapi.SafeData{
+		Name:        String("test_safe"),
+		Owner:       String("test_member"),
+		OwnerType:   String("user"),
+		Level:       String("full"),
+		Description: String("Test Safe Description"),
+		Location:    String("Test Safe Location"),
+		CPM:         String("Test CPM"),
+		EnableOLAC:  Bool(true),
+	}
+}
+
+func getUpdatedTestSafe() *cybrapi.SafeData {
+	return &cybrapi.SafeData{
+		Name:        String("test_safe"),
+		Owner:       String("test_member"),
+		OwnerType:   String("user"),
+		Level:       String("full"),
+		Description: String("Updated Test Safe Description"),
+		Location:    String("Updated Test Safe Location"),
+		CPM:         String("Test CPM"),
+		EnableOLAC:  Bool(true),
+	}
+}
+
+func getUpdatedTestSafeOLAC() *cybrapi.SafeData {
+	return &cybrapi.SafeData{
+		Name:        String("test_safe"),
+		Owner:       String("test_member"),
+		OwnerType:   String("user"),
+		Level:       String("full"),
+		Description: String("Updated Test Safe Description"),
+		Location:    String("Updated Test Safe Location"),
+		CPM:         String("Test CPM"),
+		EnableOLAC:  Bool(false),
+	}
+}
+
+func getTestMember() *cybrapi.Member {
+	return &cybrapi.Member{
+		Member:     String("test_member"),
+		MemberType: String("user"),
+	}
+}
+
+func testPVWASafeMinimalConfig() string {
+	return `
+resource "cyberark_pvwa_safe" "test" {
+  member           = "test_member"
+  member_type      = "user"
+  permission_level = "full"
+  safe_name        = "test_safe"
+  safe_loc		   = "Test Safe Location"
+  safe_desc        = "Test Safe Description"
+  cpm_name		   = "Test CPM"
+  enable_olac	   = "true"
+}
+`
+}
+
+func testPVWASafeMinimalUpdateConfig() string {
+	return `
+resource "cyberark_pvwa_safe" "test" {
+  member           = "test_member"
+  member_type      = "user"
+  permission_level = "full"
+  safe_name        = "test_safe"
+  safe_loc		   = "Updated Test Safe Location"
+  safe_desc        = "Updated Test Safe Description"
+  cpm_name		   = "Test CPM"
+  enable_olac	   = "true"
+}
+`
+}
+
+func testPVWASafeMinimalUpdateConfigOLAC() string {
+	return `
+resource "cyberark_pvwa_safe" "test" {
+  member           = "test_member"
+  member_type      = "user"
+  permission_level = "full"
+  safe_name        = "test_safe"
+  safe_loc		   = "Updated Test Safe Location"
+  safe_desc        = "Updated Test Safe Description"
+  cpm_name		   = "Test CPM"
+  enable_olac	   = "false"
+}
+`
+}
+
+// Returns a pointer to a string, enabling inlining string pointers instead of having to declare a variable and then extract its reference on another line.
+func String(str string) *string {
+	return &str
+}
+
+// Returns a pointer to a bool, enabling inlining bool pointers instead of having to declare a variable and then extract its reference on another line.
+func Bool(b bool) *bool {
+	return &b
 }
