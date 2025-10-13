@@ -309,23 +309,24 @@ provider "cyberark" {
   client_secret = var.secret_key
 
   # For PAM Self-Hosted
+  # Could be defined alongside the above or separately 
   pvwa_url      = "https://pvwa.example.com"
   pvwa_username = "myUser"
   pvwa_password = var.pvwa_password
+  pvwa_login_method = "cyberark" # optional, defaults to 'cyberark'
 }
 
-resource "cyberark_pam_safe" "PAM_Test_Safe" {
-  safe_name          = "GEN_BY_TF_abc"
-  safe_desc          = "Description for GEN_BY_TF_abc"
-  member             = "demo@cyberark.cloud.aarp0000"
-  member_type        = "user"
-  permission_level   = "read" # full, read, approver, manager
-  retention          = 7
-  retention_versions = 7
-  purge              = false
-  cpm_name           = "PasswordManager"
-  safe_loc           = ""
-  enable_olac        = false
+resource "cyberark_pvwa_safe" "PAM_Test_Safe" {
+  safe_name          = "My_Test_Safe"    # Mandatory          
+  safe_desc          = "My description"  # Optional : default is 'Managed by Terraform'
+  member             = "test_tf"         # Mandatory: must be an existing user
+  member_type        = "user"            # Mandatory: 'user' or 'group'
+  permission_level   = "approver"        # Mandatory: 'full', 'read', 'approver' or 'manager'
+  retention          = 7                 # Optional : default is 7
+  purge              = false             # Optional : default is false
+  cpm_name           = "PasswordManager" # Optional : default is 'PasswordManager'
+  safe_loc           = "\\"              # Optional : default is '\\' for root location
+  enable_olac        = false             # Optional : default is false
 }
 ```
 
