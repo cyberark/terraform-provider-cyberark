@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Updated Go version to 1.25.3 (CONJSE-2067)
 
+### Added
+- Added `close-stale.yml` GitHub workflow
+
 ## [0.3.7] - 2025-10-14
 ### Fixed
 - Fixed issues with Import, Update, Delete (Destroy) operations for PAM Self-Hosted
