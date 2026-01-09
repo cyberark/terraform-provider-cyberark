@@ -5,10 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -170,28 +168,10 @@ func (r *syncPolicyResource) Create(ctx context.Context, req resource.CreateRequ
 		}
 	}
 
-	policies, err := r.api.SecretsHubAPI.GetSyncPolicies(ctx)
+	policy, err := r.api.SecretsHubAPI.AddSyncPolicy(ctx, newPolicy)
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading sync policies", err.Error())
+		resp.Diagnostics.AddError("Error creating sync policy", err.Error())
 		return
-	}
-
-	var policy *cybrapi.PolicyExternalOutput
-
-	for _, p := range policies.Policies {
-		if *p.Name == data.Name.ValueString() {
-			policy = p
-			break
-		}
-	}
-
-	if policy == nil {
-		tflog.Info(ctx, "Sync policy not found, creating new")
-		policy, err = r.api.SecretsHubAPI.AddSyncPolicy(ctx, newPolicy)
-		if err != nil {
-			resp.Diagnostics.AddError("Error creating sync policy", err.Error())
-			return
-		}
 	}
 
 	data.ID = types.StringPointerValue(policy.ID)
@@ -250,7 +230,7 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 // Update is not supported for this resource.
 func (r *syncPolicyResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("Updating the sync policy is not supported through terraform",
-			"Please consult with your CyberArk Administrator.")
+		"Please consult with your CyberArk Administrator.")
 }
 
 // Delete removes the resource and deletes the Terraform state on success.

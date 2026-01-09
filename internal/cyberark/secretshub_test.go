@@ -832,39 +832,6 @@ func TestGetSyncPolicy(t *testing.T) {
 	})
 }
 
-func TestGetSyncPolicies(t *testing.T) {
-	t.Run("GetSyncPolicies", func(t *testing.T) {
-		body := cyberark.SyncResponse{
-			Policies: []*cyberark.PolicyExternalOutput{},
-		}
-
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			json.NewEncoder(rw).Encode(body)
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		resp, err := client.GetSyncPolicies(context.Background())
-
-		assert.NoError(t, err)
-		assert.Equal(t, body, *resp)
-	})
-
-	t.Run("ErrorStatusCode", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
-		}))
-		defer server.Close()
-
-		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
-
-		resp, err := client.GetSyncPolicies(context.Background())
-		assert.Empty(t, resp)
-		assert.Error(t, err)
-	})
-}
-
 func TestDeleteSyncPolicy(t *testing.T) {
 	var (
 		policyID = "policy-62d19762-85d0-4cc0-ba44-9e0156a5c9c6"

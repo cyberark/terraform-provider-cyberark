@@ -32,7 +32,6 @@ type SecretStore interface {
 type SyncPolicy interface {
 	AddSyncPolicy(ctx context.Context, pi PolicyInput) (*PolicyExternalOutput, error)
 	GetSyncPolicy(ctx context.Context, policyID string) (*PolicyExternalOutput, error)
-	GetSyncPolicies(ctx context.Context) (*SyncResponse, error)
 	GetSecretFilter(ctx context.Context, storeID string, filterID string) (*SecretFilterOutput, error)
 	DeleteSyncPolicy(ctx context.Context, policyID string) error
 	UpdateSyncPolicy(ctx context.Context, policyID string, pi PolicyInput) (*PolicyExternalOutput, error)
@@ -403,37 +402,6 @@ func (a *secretsHubAPI) GetSyncPolicy(ctx context.Context, policyID string) (*Po
 	}
 
 	output := PolicyExternalOutput{}
-	err = json.NewDecoder(response.Body).Decode(&output)
-	if err != nil {
-		return nil, err
-	}
-
-	return &output, nil
-}
-
-// GetSyncPolicies retrieves all sync policies from the SecretsHub.
-func (a *secretsHubAPI) GetSyncPolicies(ctx context.Context) (*SyncResponse, error) {
-	params := map[string]string{
-		"projection": "REGULAR",
-	}
-
-	response, err := a.client.DoRequest(
-		ctx,
-		"GET",
-		"/api/policies",
-		nil,
-		map[string]string{},
-		params,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode != 200 {
-		return nil, APIErrorFromResponse(response.StatusCode, response.Body)
-	}
-
-	output := SyncResponse{}
 	err = json.NewDecoder(response.Body).Decode(&output)
 	if err != nil {
 		return nil, err
