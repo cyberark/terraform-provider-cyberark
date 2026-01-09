@@ -154,8 +154,8 @@ function test_resource_crud() {
   if [[ "$resource_name" == "sync_policy" ]]; then
       echo "Testing duplicate ${resource_name} creation"
       # Clear state to force Terraform to call the API again
-      terraformExecute "cd $test_dir/create && rm -f terraform.tfstate*"
-      if ! terraformExecute "cd $test_dir/create && \
+      terraformExecute "cd test/sync_policy_duplicate/create && rm -f terraform.tfstate*"
+      if ! terraformExecute "cd test/sync_policy_duplicate/create && \
         terraform init && \
         terraform validate && \
         terraform plan && \
