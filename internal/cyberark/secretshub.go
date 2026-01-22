@@ -18,9 +18,6 @@ type SecretStore interface {
 	GetAwsAsmSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AwsAsmData], error)
 	GetAzureAkvSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[AzureAkvData], error)
 	GetGcpSecretStore(ctx context.Context, storeID string) (*SecretStoreOutput[GcpData], error)
-	GetAwsAsmSecretStores(ctx context.Context) (*SecretStoresOutput[AwsAsmData], error)
-	GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error)
-	GetGcpSecretStores(ctx context.Context) (*SecretStoresOutput[GcpData], error)
 	UpdateAwsSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AwsAsmData]) (*SecretStoreOutput[AwsAsmData], error)
 	UpdateAzureAkvSecretStore(ctx context.Context, storeID string, body SecretStoreInput[AzureAkvData]) (*SecretStoreOutput[AzureAkvData], error)
 	UpdateGcpSecretStore(ctx context.Context, storeID string, body SecretStoreInput[GcpData]) (*SecretStoreOutput[GcpData], error)
@@ -166,71 +163,6 @@ func (a *secretsHubAPI) getSecretStore(ctx context.Context, storeID string, outp
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-// GetAwsAsmSecretStores retrieves all AWS ASM secret stores from the SecretsHub.
-func (a *secretsHubAPI) GetAwsAsmSecretStores(ctx context.Context) (*SecretStoresOutput[AwsAsmData], error) {
-	var output SecretStoresOutput[AwsAsmData]
-
-	err := a.getSecretStores(ctx, "AWS_ASM", &output)
-	if err != nil {
-		return nil, err
-	}
-
-	return &output, nil
-}
-
-// GetAzureAkvSecretStores retrieves all Azure AKS secret stores from the SecretsHub.
-func (a *secretsHubAPI) GetAzureAkvSecretStores(ctx context.Context) (*SecretStoresOutput[AzureAkvData], error) {
-	var output SecretStoresOutput[AzureAkvData]
-
-	err := a.getSecretStores(ctx, "AZURE_AKV", &output)
-	if err != nil {
-		return nil, err
-	}
-
-	return &output, nil
-}
-
-// GetGcpSecretStores retrieves all Gcp secret stores from the SecretsHub.
-func (a *secretsHubAPI) GetGcpSecretStores(ctx context.Context) (*SecretStoresOutput[GcpData], error) {
-	var output SecretStoresOutput[GcpData]
-
-	err := a.getSecretStores(ctx, "GCP_GSM", &output)
-	if err != nil {
-		return nil, err
-	}
-
-	return &output, nil
-}
-
-func (a *secretsHubAPI) getSecretStores(ctx context.Context, storeType string, output interface{}) error {
-	params := map[string]string{
-		"filter": fmt.Sprintf("type EQ %s", storeType),
-	}
-
-	response, err := a.client.DoRequest(
-		ctx,
-		"GET",
-		"/api/secret-stores",
-		nil,
-		map[string]string{},
-		params,
-	)
-	if err != nil {
-		return err
-	}
-
-	if response.StatusCode != 200 {
-		return APIErrorFromResponse(response.StatusCode, response.Body)
-	}
-
-	err = json.NewDecoder(response.Body).Decode(output)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

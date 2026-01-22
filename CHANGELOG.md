@@ -4,10 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.9] - 2025-01-13
+## [0.3.9] - 2025-01-22
 
 ### Changed
-- Updated Create operation for Sync Policies to align with CyberArk SecretsHub API
+- Secret Stores & Sync Policies CREATE: Removed name-uniqueness checks to align with Secrets Hub API behavior, allowing duplicate secret store and sync policy names.
 
 ## [0.3.8] - 2025-11-03
 

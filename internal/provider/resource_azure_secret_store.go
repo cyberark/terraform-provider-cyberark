@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -106,8 +105,8 @@ For more information click [here](https://docs.cyberark.com/secrets-hub-privileg
 				Sensitive:   true,
 			},
 			"authentication_method": schema.StringAttribute{
-				Description:        "Azure Authentication Method.",
-				Optional:           true,
+				Description: "Azure Authentication Method.",
+				Optional:    true,
 			},
 			"connection_type": schema.StringAttribute{
 				Description: "Azure Connector Type.",
@@ -165,26 +164,26 @@ func (r *azureSecretStoreResource) ValidateConfig(ctx context.Context, req resou
 	if resp.Diagnostics.HasError() {
 		return
 	}
-    
+
 	if !data.AppClientSecret.IsNull() {
 		resp.Diagnostics.AddWarning(
-		"Deprecated option in use",
-		"You are using `CLIENT_SECRET`, which is deprecated and will be removed in future releases. " +
-			"Please migrate to `FEDERATED_IDENTITY`.",
+			"Deprecated option in use",
+			"You are using `CLIENT_SECRET`, which is deprecated and will be removed in future releases. "+
+				"Please migrate to `FEDERATED_IDENTITY`.",
 		)
-    }
+	}
 
 	if !data.AuthenticationMethod.IsNull() {
-	   val := *data.AuthenticationMethod.ValueStringPointer()
-	   if val != "CLIENT_SECRET" && val != "FEDERATED_IDENTITY" {
-	      resp.Diagnostics.AddError("Invalid value for Authentication Method", "Please provide correct authentication_method value either as `CLIENT_SECRET` or `FEDERATED_IDENTITY`")
-	   }
+		val := *data.AuthenticationMethod.ValueStringPointer()
+		if val != "CLIENT_SECRET" && val != "FEDERATED_IDENTITY" {
+			resp.Diagnostics.AddError("Invalid value for Authentication Method", "Please provide correct authentication_method value either as `CLIENT_SECRET` or `FEDERATED_IDENTITY`")
+		}
 
-	   if val == "FEDERATED_IDENTITY" {
-	       if !data.AppClientSecret.IsNull() {
-		       resp.Diagnostics.AddError("Invalid parameter azure_app_client_secret provided", "Please don't provide azure_app_client_secret for `FEDERATED_IDENTITY` authentication.")
-		   }
-	   }
+		if val == "FEDERATED_IDENTITY" {
+			if !data.AppClientSecret.IsNull() {
+				resp.Diagnostics.AddError("Invalid parameter azure_app_client_secret provided", "Please don't provide azure_app_client_secret for `FEDERATED_IDENTITY` authentication.")
+			}
+		}
 	}
 
 	// Validate the connector
@@ -231,25 +230,6 @@ func (r *azureSecretStoreResource) Create(ctx context.Context, req resource.Crea
 			SubscriptionName:  data.SubscriptionName.ValueStringPointer(),
 			ResourceGroupName: data.ResourceGroupName.ValueStringPointer(),
 		},
-	}
-
-	stores, err := r.api.SecretsHubAPI.GetAzureAkvSecretStores(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret stores", err.Error())
-		return
-	}
-
-	for _, store := range stores.SecretStores {
-		if *store.Name == data.Name.ValueString() && *store.Data.AppClientID == data.AppClientID.ValueString() {
-			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and account ID %s already exists", data.Name.ValueString(), data.AppClientID.ValueString()))
-
-			// We assume that secret store is already created
-			data.ID = types.StringValue(store.ID)
-			data.LastUpdated = types.StringPointerValue(store.UpdatedAt)
-			// Save data into Terraform state
-			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-			return
-		}
 	}
 
 	output, err := r.api.SecretsHubAPI.AddAzureAkvSecretStore(ctx, newStore)
