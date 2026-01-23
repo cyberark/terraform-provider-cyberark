@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -35,16 +34,16 @@ type gcpSecretStoreResource struct {
 
 // gcpSecretStoreModel describes the resource data model.
 type gcpSecretStoreModel struct {
-	Name                         types.String `tfsdk:"name"`
-	Description                  types.String `tfsdk:"description"`
-	Type                         types.String `tfsdk:"type"`
-	GcpProjectName               types.String `tfsdk:"gcp_project_name"`
-	GcpProjectNumber             types.String `tfsdk:"gcp_project_number"`
-	GcpWorkloadIdentityPoolId    types.String `tfsdk:"gcp_workload_identity_pool_id"`
-	GcpPoolProviderId            types.String `tfsdk:"gcp_pool_provider_id"`
-	ServiceAccountEmail          types.String `tfsdk:"service_account_email"`
-	ID                           types.String `tfsdk:"id"`
-	LastUpdated                  types.String `tfsdk:"last_updated"`
+	Name                      types.String `tfsdk:"name"`
+	Description               types.String `tfsdk:"description"`
+	Type                      types.String `tfsdk:"type"`
+	GcpProjectName            types.String `tfsdk:"gcp_project_name"`
+	GcpProjectNumber          types.String `tfsdk:"gcp_project_number"`
+	GcpWorkloadIdentityPoolId types.String `tfsdk:"gcp_workload_identity_pool_id"`
+	GcpPoolProviderId         types.String `tfsdk:"gcp_pool_provider_id"`
+	ServiceAccountEmail       types.String `tfsdk:"service_account_email"`
+	ID                        types.String `tfsdk:"id"`
+	LastUpdated               types.String `tfsdk:"last_updated"`
 }
 
 // Metadata returns the resource type name.
@@ -174,31 +173,12 @@ func (r *gcpSecretStoreResource) Create(ctx context.Context, req resource.Create
 		Description: data.Description.ValueStringPointer(),
 		Type:        data.Type.ValueStringPointer(),
 		Data: &cybrapi.GcpData{
-			GcpProjectName:  data.GcpProjectName.ValueStringPointer(),
-			GcpProjectNumber:  data.GcpProjectNumber.ValueStringPointer(),
-			GcpWorkloadIdentityPoolId:  data.GcpWorkloadIdentityPoolId.ValueStringPointer(),
-			GcpPoolProviderId:      data.GcpPoolProviderId.ValueStringPointer(),
-			ServiceAccountEmail:    data.ServiceAccountEmail.ValueStringPointer(),
+			GcpProjectName:            data.GcpProjectName.ValueStringPointer(),
+			GcpProjectNumber:          data.GcpProjectNumber.ValueStringPointer(),
+			GcpWorkloadIdentityPoolId: data.GcpWorkloadIdentityPoolId.ValueStringPointer(),
+			GcpPoolProviderId:         data.GcpPoolProviderId.ValueStringPointer(),
+			ServiceAccountEmail:       data.ServiceAccountEmail.ValueStringPointer(),
 		},
-	}
-
-	stores, err := r.api.SecretsHubAPI.GetGcpSecretStores(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret stores", err.Error())
-		return
-	}
-
-	for _, store := range stores.SecretStores {
-		if *store.Name == data.Name.ValueString() && *store.Data.GcpProjectName == data.GcpProjectName.ValueString() {
-			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and Gcp Project %s already exists", data.Name.ValueString(), data.GcpProjectName.ValueString()))
-
-			// We assume that secret store is already created
-			data.ID = types.StringValue(store.ID)
-			data.LastUpdated = types.StringPointerValue(store.UpdatedAt)
-			// Save data into Terraform state
-			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-			return
-		}
 	}
 
 	output, err := r.api.SecretsHubAPI.AddGcpSecretStore(ctx, newStore)
@@ -273,10 +253,10 @@ func (r *gcpSecretStoreResource) Update(ctx context.Context, req resource.Update
 		Name:        data.Name.ValueStringPointer(),
 		Description: data.Description.ValueStringPointer(),
 		Data: &cybrapi.GcpData{
-			GcpProjectName:  data.GcpProjectName.ValueStringPointer(),
-			GcpWorkloadIdentityPoolId:  data.GcpWorkloadIdentityPoolId.ValueStringPointer(),
-			GcpPoolProviderId:      data.GcpPoolProviderId.ValueStringPointer(),
-			ServiceAccountEmail:    data.ServiceAccountEmail.ValueStringPointer(),
+			GcpProjectName:            data.GcpProjectName.ValueStringPointer(),
+			GcpWorkloadIdentityPoolId: data.GcpWorkloadIdentityPoolId.ValueStringPointer(),
+			GcpPoolProviderId:         data.GcpPoolProviderId.ValueStringPointer(),
+			ServiceAccountEmail:       data.ServiceAccountEmail.ValueStringPointer(),
 		},
 	}
 

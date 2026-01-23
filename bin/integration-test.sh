@@ -151,20 +151,6 @@ function test_resource_crud() {
     return 1
   fi
 
-  if [[ "$resource_name" == "sync_policy" ]]; then
-      echo "Testing duplicate ${resource_name} creation"
-      # Clear state to force Terraform to call the API again
-      terraformExecute "cd test/sync_policy_duplicate/create && rm -f terraform.tfstate*"
-      if ! terraformExecute "cd test/sync_policy_duplicate/create && \
-        terraform init && \
-        terraform validate && \
-        terraform plan && \
-        terraform apply -auto-approve"; then
-        echo "FAILED: ${resource_name} creation failed"
-        return 1
-      fi
-  fi
-
   # Get the resource ID for validation
   local resource_id=$(terraformExecute "cd $test_dir/create && jq -r '.outputs.${id_output_name}.value' terraform.tfstate")
   if [[ -z "$resource_id" || "$resource_id" == "null" ]]; then

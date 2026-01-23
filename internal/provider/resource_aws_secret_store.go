@@ -7,12 +7,10 @@ import (
 
 	cybrapi "github.com/cyberark/terraform-provider-cyberark/internal/cyberark"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -137,26 +135,6 @@ func (r *awsSecretStoreResource) Create(ctx context.Context, req resource.Create
 			RegionID:     data.RegionID.ValueStringPointer(),
 			RoleName:     data.RoleName.ValueStringPointer(),
 		},
-	}
-
-	stores, err := r.api.SecretsHubAPI.GetAwsAsmSecretStores(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret stores",
-			fmt.Sprintf("Error while reading secret stores: %+v", err))
-		return
-	}
-
-	for _, store := range stores.SecretStores {
-		if *store.Name == data.Name.ValueString() && *store.Data.AccountAlias == data.AccountAlias.ValueString() {
-			tflog.Info(ctx, fmt.Sprintf("Secret store with name %s and account alias %s already exists", data.Name.ValueString(), data.AccountAlias.ValueString()))
-
-			// We assume that secret store is already created
-			data.ID = types.StringValue(store.ID)
-			data.LastUpdated = types.StringPointerValue(store.UpdatedAt)
-			// Save data into Terraform state
-			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-			return
-		}
 	}
 
 	output, err := r.api.SecretsHubAPI.AddAwsAsmSecretStore(ctx, newStore)
