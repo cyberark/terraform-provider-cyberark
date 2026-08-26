@@ -188,11 +188,11 @@ void normalizeOwnership(String... dirs) {
     if ! command -v sudo >/dev/null 2>&1; then
       exit 0
     fi
-    u="\\$(id -u):\\$(id -g)"
+    u="\$(id -u):\$(id -g)"
     for d in ${dirs.join(' ')}; do
-      if [ -e "\\$d" ]; then
-        sudo chown -R "\\$u" "\\$d" 2>/dev/null || true
-        sudo chmod -R u+rwX "\\$d" 2>/dev/null || true
+      if [ -e "\$d" ]; then
+        sudo chown -R "\$u" "\$d" 2>/dev/null || true
+        sudo chmod -R u+rwX "\$d" 2>/dev/null || true
       fi
     done
   """
