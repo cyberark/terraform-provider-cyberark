@@ -12,10 +12,10 @@ properties([
 
 // Performs release promotion.  No other stages will be run
 if (params.MODE == "PROMOTE") {
-  release.promote(params.VERSION_TO_PROMOTE) { infrapool, sourceVersion, targetVersion, assetDirectory ->
+  release.promote(params.VERSION_TO_PROMOTE) { sourceVersion, targetVersion, assetDirectory ->
     // Gather the SUMS file to sign
     sums = "*SHA256SUMS"
-    infrapool.agentGet from: "${assetDirectory}/${sums}", to: "./"
+    sh "cp ${assetDirectory}/${sums} ./"
     sumFile = sh(script: "ls ${sums}", returnStdout: true).trim()
     // Create .tar for signing
     sh "mv ${sumFile} ${sumFile}.tar"
@@ -24,8 +24,7 @@ if (params.MODE == "PROMOTE") {
     sh "mv ${sumFile}.tar.sig ${sumFile}.sig"
     // Copy back to assetDirectory
     sigLocation = pwd() + "/${sumFile}.sig"
-    infrapool.agentPut from: "${sigLocation}", to: "${assetDirectory}"
-
+    sh "cp ${sigLocation} ${assetDirectory}"
   }
   // Copy Github Enterprise release to Github
   release.copyEnterpriseRelease(params.VERSION_TO_PROMOTE)
@@ -33,7 +32,7 @@ if (params.MODE == "PROMOTE") {
 }
 
 pipeline {
-  agent { label 'conjur-enterprise-common-agent' }
+  agent { label 'conjur-enterprise-AmznDocker' }
 
   options {
     timestamps()
@@ -57,22 +56,10 @@ pipeline {
       }
     }
 
-    stage('Get InfraPool ExecutorV2 Agent') {
-      steps {
-        script {
-          // Request InfraPool
-          INFRAPOOL_EXECUTORV2_AGENT_0 = getInfraPoolAgent.connected(type: "ExecutorV2", quantity: 1, duration: 1)[0]
-        }
-      }
-    }
-
     stage('Get latest upstream dependencies') {
       steps {
         script {
           updatePrivateGoDependencies("${WORKSPACE}/go.mod")
-          // Copy the vendor directory onto infrapool
-          INFRAPOOL_EXECUTORV2_AGENT_0.agentPut from: "vendor", to: "${WORKSPACE}"
-          INFRAPOOL_EXECUTORV2_AGENT_0.agentPut from: "go.*", to: "${WORKSPACE}"
         }
       }
     }
@@ -80,14 +67,14 @@ pipeline {
     // Generates a VERSION file based on the current build number and latest version in CHANGELOG.md
     stage('Validate changelog and set version') {
       steps {
-        updateVersion(INFRAPOOL_EXECUTORV2_AGENT_0, "CHANGELOG.md", "${BUILD_NUMBER}")
+        updateVersion("CHANGELOG.md", "${BUILD_NUMBER}")
       }
     }
 
     stage('Build artifacts') {
       steps {
         script {
-          INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/build'
+          sh './bin/build'
         }
       }
     }
@@ -107,7 +94,7 @@ pipeline {
           conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-account_password", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE')
         ]){
           script {
-            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/test'
+            sh './bin/test'
           }
         }
       }
@@ -120,8 +107,8 @@ pipeline {
             conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_username", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_ID'),
           ]){
             script {
-              INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/cleanup-resources.sh'
-              INFRAPOOL_EXECUTORV2_AGENT_0.agentStash name: 'output-xml', includes: 'output/*.xml'
+              normalizeOwnership('output')
+              sh './bin/cleanup-resources.sh'
             }
           }
         }
@@ -143,7 +130,7 @@ pipeline {
           conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-aws-account_password", variable: 'INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE')
         ]){
           script {
-            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/integration-test.sh'
+            sh './bin/integration-test.sh'
           }
         }
       }
@@ -157,7 +144,7 @@ pipeline {
               conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_username", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_ID'),
             ]){
               script {
-                INFRAPOOL_EXECUTORV2_AGENT_0.agentSh './bin/cleanup-resources.sh'
+                sh './bin/cleanup-resources.sh'
               }
             }
           }
@@ -173,25 +160,40 @@ pipeline {
       }
       steps {
         script {
-          release(INFRAPOOL_EXECUTORV2_AGENT_0) { billOfMaterialsDirectory, assetDirectory, toolsDirectory ->
+          release { billOfMaterialsDirectory, assetDirectory, toolsDirectory ->
             // Publish release artifacts to all the appropriate locations
             // Copy any artifacts to assetDirectory to attach them to the Github release
-            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh "cp -r dist/*.zip dist/*_SHA256SUMS ${assetDirectory}"
+            sh "cp -r dist/*.zip dist/*_SHA256SUMS ${assetDirectory}"
             // Create Go module SBOM
-            INFRAPOOL_EXECUTORV2_AGENT_0.agentSh """export PATH="${toolsDirectory}/bin:${PATH}" && go-bom --tools "${toolsDirectory}" --go-mod ./go.mod --image "golang" --output "${billOfMaterialsDirectory}/go-mod-bom.json" """
+            sh """export PATH="${toolsDirectory}/bin:${PATH}" && go-bom --tools "${toolsDirectory}" --go-mod ./go.mod --image "golang" --output "${billOfMaterialsDirectory}/go-mod-bom.json" """
           }
         }
       }
     }
   }
+
   post {
     always {
-      unstash 'output-xml'
       junit 'output/junit.xml'
       cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'output/coverage.xml', conditionalCoverageTargets: '30, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '28, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '30, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
       codacy action: 'reportCoverage', filePath: "output/coverage.xml"
-
-      releaseInfraPoolAgent(".infrapool/release_agents")
     }
   }
+}
+
+// Fixes root ownership left behind by Docker volume mounts so that subsequent
+// Jenkins steps and re-runs can read and write the affected directories.
+void normalizeOwnership(String... dirs) {
+  sh """
+    if ! command -v sudo >/dev/null 2>&1; then
+      exit 0
+    fi
+    u="\\$(id -u):\\$(id -g)"
+    for d in ${dirs.join(' ')}; do
+      if [ -e "\\$d" ]; then
+        sudo chown -R "\\$u" "\\$d" 2>/dev/null || true
+        sudo chmod -R u+rwX "\\$d" 2>/dev/null || true
+      fi
+    done
+  """
 }
