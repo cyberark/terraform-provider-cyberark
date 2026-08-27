@@ -177,7 +177,7 @@ pipeline {
     always {
       unstash 'output-xml'
       junit 'output/junit.xml'
-      cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'output/coverage.xml', conditionalCoverageTargets: '30, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '28, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '30, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+      recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'output/coverage.xml']])
       codacy action: 'reportCoverage', filePath: "output/coverage.xml"
     }
   }
