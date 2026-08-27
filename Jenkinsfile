@@ -107,8 +107,9 @@ pipeline {
             conjurSecretCredential(credentialsId: "RnD-Global-Conjur-Ent-Conjur_sh-shared-services-client_username", variable: 'INFRAPOOL_SHARED_SERVICES_CLIENT_ID'),
           ]){
             script {
-              normalizeOwnership('output')
               sh './bin/cleanup-resources.sh'
+              normalizeOwnership('output')
+              stash name: 'output-xml', includes: 'output/*.xml'
             }
           }
         }
@@ -174,6 +175,7 @@ pipeline {
 
   post {
     always {
+      unstash 'output-xml'
       junit 'output/junit.xml'
       cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'output/coverage.xml', conditionalCoverageTargets: '30, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '28, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '30, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
       codacy action: 'reportCoverage', filePath: "output/coverage.xml"
