@@ -1,6 +1,6 @@
 module github.com/cyberark/terraform-provider-cyberark
 
-go 1.25.3
+go 1.27
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.23.0
