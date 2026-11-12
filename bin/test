@@ -10,6 +10,8 @@ export TF_AWS_ACCOUNT_ID="${INFRAPOOL_SHARED_SERVICES_AWS_ACCOUNT_ID}"
 export TF_AWS_IAM_ROLE="${INFRAPOOL_SHARED_SERVICES_AWS_IAM_ROLE}"
 export TF_SOURCE_ID="store-77644f32-1d09-4845-91cb-574154609632"
 
+source "$(git rev-parse --show-toplevel)/bin/go_proxy.sh"
+
 function finish {
   docker compose down unit_tests -v
 }
@@ -18,7 +20,7 @@ trap finish EXIT
 
 main() {
 
-  docker compose build --pull unit_tests
+  BUILDX_BAKE_ENTITLEMENTS_FS=0 docker compose build --pull unit_tests
   docker compose run --rm unit_tests
 }
 

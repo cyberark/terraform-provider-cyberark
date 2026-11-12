@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-@Library("product-pipelines-shared-library") _
+@Library(['product-pipelines-shared-library', 'conjur-enterprise-sharedlib']) _
 
   // Automated release, promotion and dependencies
 properties([
@@ -12,7 +12,7 @@ properties([
 
 // Performs release promotion.  No other stages will be run
 if (params.MODE == "PROMOTE") {
-  release.promote(params.VERSION_TO_PROMOTE) { sourceVersion, targetVersion, assetDirectory ->
+  release.promote(params.VERSION_TO_PROMOTE, [agent: 'conjur-enterprise-AmznDocker']) { sourceVersion, targetVersion, assetDirectory ->
     // Gather the SUMS file to sign
     sums = "*SHA256SUMS"
     sh "cp ${assetDirectory}/${sums} ./"
@@ -52,6 +52,14 @@ pipeline {
       steps {
         script {
           detectInternalUrls()
+        }
+      }
+    }
+
+    stage('Configure Artifactory') {
+      steps {
+        script {
+          goProxy.setup()
         }
       }
     }
@@ -175,6 +183,9 @@ pipeline {
 
   post {
     always {
+      script {
+        goProxy.cleanup()
+      }
       unstash 'output-xml'
       junit 'output/junit.xml'
       recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'output/coverage.xml']])
