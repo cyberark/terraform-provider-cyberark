@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Updated Go to 1.27.3.
+- Updated terraform-plugin-docs to v0.25.0.
+- Updated hc-install to v0.10.0.
+- Updated terraform-plugin-testing to v1.16.0.
+- Updated terraform-plugin-framework to v1.19.0.
 
 ## [0.3.9] - 2025-01-22
 
