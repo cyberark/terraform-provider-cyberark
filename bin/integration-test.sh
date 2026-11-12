@@ -125,6 +125,29 @@ function terraformExecute() {
   dockerCompose exec -T terraform sh -ec "$@"
 }
 
+function terraform_import_with_retry() {
+  local test_dir="$1"
+  local address="$2"
+  local resource_id="$3"
+  local retry_error="$4"
+  local max_attempts=5
+  local attempt output
+
+  for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+    if output=$(terraformExecute "cd $test_dir/update && terraform init && terraform import $address $resource_id" 2>&1); then
+      echo "$output"
+      return 0
+    fi
+    echo "$output"
+    if [[ -z "$retry_error" ]] || ! grep -qF "$retry_error" <<< "$output" || ((attempt == max_attempts)); then
+      return 1
+    fi
+    echo "${retry_error}, retrying (${attempt}/${max_attempts})"
+    terraformExecute "cd $test_dir/update && terraform state rm $address" > /dev/null 2>&1 || true
+    sleep 5
+  done
+}
+
 function test_resource_crud() {
   local test_dir="$1"
   local resource_name="$2"
@@ -161,9 +184,11 @@ function test_resource_crud() {
 
   # Step 2: Import the Resource
   echo "Step 2: Importing ${resource_name}"
-  if ! terraformExecute "cd $test_dir/update && \
-    terraform init && \
-    terraform import cyberark_${resource_name}.imported $resource_id"; then
+  local import_retry_error=""
+  if [[ "$resource_name" == "sync_policy" ]]; then
+    import_retry_error="Sync policy filter not ready"
+  fi
+  if ! terraform_import_with_retry "$test_dir" "cyberark_${resource_name}.imported" "$resource_id" "$import_retry_error"; then
     echo "FAILED: ${resource_name} import command failed"
     return 1
   fi

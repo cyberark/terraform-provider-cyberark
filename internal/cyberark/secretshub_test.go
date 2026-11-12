@@ -695,6 +695,24 @@ func TestGetSyncPolicy(t *testing.T) {
 		assert.Equal(t, body, *resp)
 	})
 
+	t.Run("DecodesTheSafeFilter", func(t *testing.T) {
+		// REGULAR projection response, as documented in the Secrets Hub API reference (PolicyExternalOutput)
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "REGULAR", req.URL.Query().Get("projection"))
+			rw.Write([]byte(`{"id":"` + policyID + `","name":"test_policy","source":{"id":"store-source"},"target":{"id":"store-target"},"filter":{"id":"filter-8e6513f7-1017-426c-9b0d-d7e27b08d768","type":"PAM_SAFE","data":{"safeName":"MySafe"}},"state":{"current":"ENABLED"}}`))
+		}))
+		defer server.Close()
+
+		client := cyberark.NewSecretsHubAPI(server.URL, []byte("dummy_token"))
+
+		resp, err := client.GetSyncPolicy(context.Background(), policyID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "filter-8e6513f7-1017-426c-9b0d-d7e27b08d768", *resp.Filter.ID)
+		assert.Equal(t, "PAM_SAFE", *resp.Filter.Type)
+		assert.Equal(t, "MySafe", *resp.Filter.Data.SafeName)
+	})
+
 	t.Run("ErrorStatusCode", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)

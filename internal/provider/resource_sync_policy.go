@@ -22,6 +22,12 @@ var (
 	_ resource.ResourceWithImportState    = &syncPolicyResource{}
 )
 
+const syncPolicyFilterNotReadySummary = "Sync policy filter not ready"
+
+func hasSafeFilter(policy *cybrapi.PolicyExternalOutput) bool {
+	return policy.Filter != nil && policy.Filter.Data != nil && policy.Filter.Data.SafeName != nil
+}
+
 // NewSyncPolicyResource is a helper function to simplify the provider implementation.
 func NewSyncPolicyResource() resource.Resource {
 	return &syncPolicyResource{}
@@ -197,16 +203,24 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	store, err := r.api.SecretsHubAPI.GetSecretFilter(ctx, policy.Source.SourceID, *policy.Filter.ID)
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading secret filter", err.Error())
-		return
+	filter := policy.Filter
+	if !hasSafeFilter(policy) {
+		if policy.Source == nil || filter == nil || filter.ID == nil {
+			resp.Diagnostics.AddError(syncPolicyFilterNotReadySummary, fmt.Sprintf("The Secrets Hub API returned sync policy %s without its Safe filter. This can happen right after the policy is created, retry shortly.", data.ID.ValueString()))
+			return
+		}
+		store, err := r.api.SecretsHubAPI.GetSecretFilter(ctx, policy.Source.SourceID, *filter.ID)
+		if err != nil {
+			resp.Diagnostics.AddError("Error reading secret filter", err.Error())
+			return
+		}
+		filter = &cybrapi.FilterResponse{ID: store.ID, Type: store.Type, Data: store.Data}
 	}
 
 	data = syncPolicyModel{
 		Name:        types.StringPointerValue(policy.Name),
 		Description: types.StringPointerValue(policy.Description),
-		Type:        types.StringPointerValue(store.Type),
+		Type:        types.StringPointerValue(filter.Type),
 		ID:          types.StringPointerValue(policy.ID),
 		LastUpdated: types.StringPointerValue(policy.UpdatedAt),
 	}
@@ -219,8 +233,8 @@ func (r *syncPolicyResource) Read(ctx context.Context, req resource.ReadRequest,
 		data.TargetID = types.StringValue(policy.Target.TargetID)
 	}
 
-	if store.Data != nil {
-		data.SafeName = types.StringPointerValue(store.Data.SafeName)
+	if filter.Data != nil {
+		data.SafeName = types.StringPointerValue(filter.Data.SafeName)
 	}
 
 	// Save updated data into Terraform state

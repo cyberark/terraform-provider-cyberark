@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated terraform-plugin-testing to v1.16.0.
 - Updated terraform-plugin-framework to v1.19.0.
 
+### Fixed
+- `cyberark_sync_policy`: reading or importing a sync policy now takes the Safe name and type from the policy response, and fails with a "Sync policy filter not ready" error, instead of crashing the provider, when the policy has no filter yet.
+
 ## [0.3.9] - 2025-01-22
 
 ### Changed
