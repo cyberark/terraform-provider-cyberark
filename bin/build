@@ -2,6 +2,9 @@
 
 export SECRETSHUB_VERSION="$(cat VERSION | cut -d'-' -f1)"
 
+# Use the internal Go module proxy when Jenkins provided one (see bin/go_proxy.sh)
+source "$(git rev-parse --show-toplevel)/bin/go_proxy.sh"
+
 main() {
   build_and_package_binaries
 }

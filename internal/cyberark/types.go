@@ -261,7 +261,9 @@ type PolicyInput struct {
 
 // FilterResponse represents the policy filter response
 type FilterResponse struct {
-	ID *string `json:"id"`
+	ID   *string         `json:"id"`
+	Type *string         `json:"type"`
+	Data *SafeDataFilter `json:"data"`
 }
 
 // State represents the current policy state

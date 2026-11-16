@@ -32,7 +32,7 @@ Automated audit of code changes before opening a Pull Request. The skill analyze
 
 ### 3. Standard Compliance
 
-- Go version follows `go.mod` (currently 1.27; README documents a lower build-time minimum of 1.21 — don't let these drift further apart without updating both).
+- Go version follows `go.mod` (currently 1.27.3; README documents a lower build-time minimum of 1.21 — don't let these drift further apart without updating both).
 - Release versioning comes from the `VERSION` file (`SECRETSHUB_VERSION` env var consumed by GoReleaser) — a release-worthy PR should bump this consistently with `.goreleaser.yml` expectations.
 - Don't assume package/comment naming reflects current scope — the `provider` package is still referred to as the "SecretHub provider" in some comments even though scope now spans PAM/Privilege Cloud too; don't propagate that stale naming into new code without checking current intent.
 

@@ -5,15 +5,25 @@ services:
       dockerfile: Dockerfile.goreleaser
     environment:
       SECRETSHUB_VERSION:
+      GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+      NETRC: /run/secrets/gonetrc
     volumes:
       - .:/terraform-provider-cyberark
     working_dir: /terraform-provider-cyberark
+    secrets:
+      - gonetrc
   unit_tests:
     build:
       context: .
       dockerfile: Dockerfile.test
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+      secrets:
+        - gonetrc
     environment:
       SECRETSHUB_VERSION:
+      GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+      NETRC: /run/secrets/gonetrc
       TF_TENANT_NAME:
       TF_DOMAIN_NAME:
       TF_CLIENT_ID:
@@ -25,3 +35,9 @@ services:
       TF_SOURCE_ID:
     volumes:
       - .:/terraform-provider-cyberark
+    secrets:
+      - gonetrc
+
+secrets:
+  gonetrc:
+    file: ${GO_NETRC_FILE:-/dev/null}
