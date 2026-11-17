@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-11-17
+
 ### Security
 - Updated Go to 1.27.3.
 - Updated terraform-plugin-docs to v0.25.0.
